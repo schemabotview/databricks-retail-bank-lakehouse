@@ -4,8 +4,8 @@
 
 ## What this repo is
 
-A GraphL concept app: **learn Databricks by building a retail bank lakehouse**, `quill-lakehouse`,
-the data platform of Quill Bank (fictional), from a few files in a Volume to a governed, declared,
+A GraphL concept app: **learn Databricks by building a retail bank lakehouse**, `lakehaven`,
+the data platform of Lakehaven Bank (fictional), from a few files in a Volume to a governed, declared,
 scheduled, tested lakehouse, **run on a real Databricks Free Edition workspace**. A **section** is
 `(scene, narration)`: one full-screen 16:9 frame, one chapter of the video.
 
@@ -29,7 +29,7 @@ Plan v1 written 2026-10-26, awaiting owner review. No infra, scenes, spine or na
 
 | # | Course | Sections | Status |
 | --- | --- | --- | --- |
-| 1 | `intro` | 3 | not started |
+| 1 | `intro` | 4 | not started |
 | 2 | `start` | 6 | not started (pilot) |
 | 3 | `land` | 8 | not started |
 | 4 | `ledger` | 8 | not started |
@@ -41,6 +41,14 @@ Plan v1 written 2026-10-26, awaiting owner review. No infra, scenes, spine or na
 | 10 | `schedule` | 7 | not started |
 | 11 | `ship` | 7 | not started |
 | 12 | `operate` | 6 | not started |
+
+## The medallion layout
+
+One schema per layer in each catalog (`lakehaven_dev`, `lakehaven_prod`): `landing` (Volumes) →
+`bronze` → `silver` → `gold`, plus `vault` (PII by token) and `ml`. A table's layer is decided in
+`COURSE-PLAN.md`'s table list, never ad hoc; gold reads only silver, and consumers (dashboards,
+`finance`, `branches`) read only gold. Each layer's promise (complete / correct / ready) is what a
+scene about it must show.
 
 ## Route contract
 
@@ -74,13 +82,13 @@ spec, never committed). What the workspace adds:
 
 - **The replay talks to a live workspace** through a CLI profile from the environment (host + token
   as secrets, never committed, never printed). Without them a workspace step cannot replay.
-- **Normalisation**: the host is shown as `https://quill.cloud.databricks.com`, the user as
-  `ana@quillbank.example`, local paths as `/home/ana/quill-lakehouse`. Normalise in the replay, never
+- **Normalisation**: the host is shown as `https://lakehaven.cloud.databricks.com`, the user as
+  `ana@lakehavenbank.example`, local paths as `/home/ana/lakehaven`. Normalise in the replay, never
   by hand in a scene.
 - **Volatile by nature**: run ids, update ids, job ids, timestamps, durations, URLs. Masked in the
   comparison; a scene READS such a value from the session, and narration never says it.
 - **Every step starts from a known workspace state**: a step's setup drops and recreates what it
-  owns under `quill_dev`, so replays do not depend on order or on a previous run.
+  owns under `lakehaven_dev`, so replays do not depend on order or on a previous run.
 - **The daily fair-usage quota is a budget**: keep data small, and replay one course at a time.
 
 ## Frames
@@ -98,7 +106,7 @@ dashboards are drawn from the API's own numbers (event log, system tables, run o
 ```sh
 npm run build && npx tsc --noEmit && npm run check   # check-content + check-render (4K)
 python scripts/spine.py <course>                     # replays against the workspace
-python -m quill_sim verify
+python -m lakehaven_sim verify
 npm run shots -- <course>                            # then LOOK at out/shots/
 ```
 

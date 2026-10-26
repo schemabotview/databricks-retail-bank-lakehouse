@@ -4,7 +4,7 @@
 
 ## The idea
 
-One application, `quill-lakehouse`, the data platform of **Quill Bank**, a fictional retail bank.
+One application, `lakehaven`, the data platform of **Lakehaven Bank**, a fictional retail bank.
 It grows from a few files in a Volume to a governed, declarative, scheduled, tested lakehouse that
 serves finance, risk, branches, the regulator and a fraud model. Every Databricks feature is taught
 **when the bank first needs it**. Background (what the control plane is, what Unity Catalog's
@@ -60,7 +60,7 @@ Databricks SQL and MLflow, so almost every section can show a real run. Its limi
 | --- | --- |
 | Serverless compute only, no custom clusters | Every run is serverless; classic clusters and cluster policies are documented (2.2) |
 | One SQL warehouse, 2X-Small | Course 8 uses it; data sizes stay modest |
-| One active pipeline per pipeline type | One pipeline, `quill_pipeline`, holds bronze → gold |
+| One active pipeline per pipeline type | One pipeline, `lakehaven_pipeline`, holds the whole medallion, bronze → gold |
 | Max 5 concurrent job tasks | The nightly job's widest fan-out is ≤ 5 tasks |
 | No account console or account APIs; no SSO/SCIM | Account-level administration is documented; grants use what the workspace allows (see Open decisions) |
 | Outbound internet limited to trusted domains | The workspace never fetches data; the generator runs on the laptop and uploads |
@@ -93,7 +93,7 @@ Pinned once the Course 2 infra is built, then never changed. Candidates at the t
 | `pyspark` + `delta-spark` (tests only, separate venv) | 4.2.0 + 4.4.1 | the same pair as `spark-ecommerce-analytics`; Connect and PySpark cannot share a venv |
 | `mlflow`, `scikit-learn` | at Course 9 | the fraud model |
 
-## The bank and its data: `quill_sim`
+## The bank and its data: `lakehaven_sim`
 
 All data is synthetic and owned, made by a seeded generator (ported from `shopwave_gen`): every
 table drawn from its own random stream keyed by (seed, table, day), so a slice is byte-identical to
@@ -111,7 +111,7 @@ how the landing zone of a real bank is fed by a vendor or a CDC tool.
 Sized to stay well inside the daily quota (order of magnitude: 5,000 customers, ~6,500 accounts,
 ~40 days of card authorizations, a few hundred thousand rows). Final sizes are frozen in Course 2.
 
-**Planted problems**, each a named constant in `quill_sim/model.py` and asserted by `verify`:
+**Planted problems**, each a named constant in `lakehaven_sim/model.py` and asserted by `verify`:
 
 - **The 14 October batch**: the processor sends one file in minor units (cents), so amounts are ×100. (4)
 - **Resent authorizations**: identical duplicates in a later file. (3)
@@ -127,45 +127,78 @@ Sized to stay well inside the daily quota (order of magnitude: 5,000 customers, 
 
 Regulatory rules and thresholds are **illustrative**, labelled so, and never legal advice.
 
-## The app: `quill-lakehouse`
+## The app: `lakehaven`
 
-One name everywhere: the folder and the bundle are `quill-lakehouse`; the Python package is
-`quill`; the catalogs are `quill_dev` and `quill_prod`. Paths are shown as
-`/home/ana/quill-lakehouse`; Ana is Quill Bank's data engineer.
+One name everywhere: the folder and the bundle are `lakehaven`; the Python package is
+`lakehaven`; the catalogs are `lakehaven_dev` and `lakehaven_prod`. Paths are shown as
+`/home/ana/lakehaven`; Ana is Lakehaven Bank's data engineer.
 
 ```
-quill-lakehouse/
-  pyproject.toml          databricks-connect, the quill package               (2 → 11)
-  quill_sim/              the seeded generator (owned data)                   (2 →)
-  src/quill/
-    session.py            DatabricksSession on serverless                     (2)
-    land.py               Auto Loader → bronze                                (3)
-    ledger.py             settlements MERGE, constraints, restore             (4)
-    cdc.py                core-system changes → SCD1 / SCD2                   (5)
-    fraud/                rules.sql, features.py, train.py, score.py          (9)
-  governance/             grants.sql, masks.sql, filters.sql, tags.sql        (6)
-  pipelines/              quill_pipeline.py: bronze, silver, gold declared    (7)
-  sql/                    balances.sql, statement.sql, as_of.sql, alerts      (8)
-  dashboards/             statements.lvdash.json                              (8)
-  resources/              quill_pipeline.yml, nightly.yml                     (7 → 11)
-  databricks.yml          the bundle: targets dev, prod                       (11)
-  tests/                  local PySpark unit tests, one Connect test          (11)
-  .github/workflows/      deploy.yml                                          (11)
+lakehaven/
+  pyproject.toml          databricks-connect, the lakehaven package            (2 → 11)
+  lakehaven_sim/          the seeded generator (owned data)                    (2 →)
+  src/lakehaven/
+    session.py            DatabricksSession on serverless                      (2)
+    land.py               landing → bronze, Auto Loader                        (3)
+    ledger.py             bronze → silver transactions: MERGE, constraints     (4)
+    cdc.py                bronze CDC → silver customers, SCD1 / SCD2           (5)
+    fraud/                rules.sql, features.py, train.py, score.py           (9)
+  governance/             grants, masks, filters, tags — per layer             (6)
+  pipelines/              bronze.py, silver.py, gold.py: the medallion, declared (7)
+  sql/gold/               balances, statements, as_of, alerts                  (8)
+  dashboards/             statements.lvdash.json (reads gold only)             (8)
+  resources/              lakehaven_pipeline.yml, nightly.yml                  (7 → 11)
+  databricks.yml          the bundle: targets dev, prod                        (11)
+  tests/                  local PySpark unit tests, one Connect test           (11)
+  .github/workflows/      deploy.yml                                           (11)
 ```
 
-| After course | Quill Bank can… |
+| After course | Lakehaven Bank can… |
 | --- | --- |
 | 2 Start | query a day of card authorizations in a Delta table on serverless |
 | 3 Land | ingest every new card file exactly once, surviving schema changes |
 | 4 Ledger | undo a bad batch, refuse the next one, and settle authorizations |
 | 5 Customers | keep customers, accounts and KYC current *and* historical |
 | 6 Protect | mask PII, filter by branch region, show lineage and audit, honour erasure |
-| 7 Pipeline | build bronze → silver → gold as one declared, checked pipeline |
+| 7 Pipeline | build the medallion — bronze → silver → gold — as one declared, checked pipeline |
 | 8 Serve | publish balances, statements and an as-of report to analysts |
 | 9 Detect | flag card testing in minutes, with a tracked, registered model |
 | 10 Schedule | run every night, start on file arrival, repair a failed run |
 | 11 Ship | deploy dev and prod from git, tested |
 | 12 Operate | see its own cost and keep its tables fast |
+
+## The medallion architecture
+
+The lakehouse is laid out as Databricks' **medallion architecture**: data moves through layers,
+and each layer makes a stronger promise than the one before it. It is a convention, not a product
+feature, so the course says when it pays and what each layer must guarantee, rather than
+presenting it as a rule. Every catalog (`lakehaven_dev`, `lakehaven_prod`) has one schema per layer:
+
+| Layer | Schema | Holds | Promise | Written by | Read by |
+| --- | --- | --- | --- | --- | --- |
+| Landing | `landing` (Volumes) | files exactly as the sources sent them | nothing: kept so any table can be rebuilt | the generator, the CDC tool | bronze ingest only |
+| Bronze | `bronze` | one row per record received, append-only, plus source file and arrival time | complete: nothing lost, nothing changed | Auto Loader (3), the pipeline (7) | engineers |
+| Silver | `silver` | typed, de-duplicated, validated, conformed entities: transactions, customers (current + history), accounts, merchants, FX | correct: one row per real thing, rejects quarantined | `MERGE` / `AUTO CDC` (4, 5, 7) | engineers, risk, data science |
+| Gold | `gold` | business products: daily balances, statements, card spend, fraud flags, the as-of report | ready: named for the business, shaped for one use | materialized views, SQL (7, 8, 9) | finance, branches, regulator, dashboards |
+
+Two schemas sit beside the layers: `vault` (PII by token, Course 6) and `ml` (features and models,
+Course 9).
+
+| Table | Layer | Built in |
+| --- | --- | --- |
+| `card_auths`, `settlements`, `core_cdc`, `app_events` | bronze | 2, 3 |
+| `card_transactions` | silver | 4 |
+| `customers`, `customers_history`, `accounts`, `merchants`, `fx_rates` | silver | 5, 8 |
+| `card_transactions_quarantine` | silver | 7 |
+| `daily_balances`, `monthly_statements`, `card_spend_daily` | gold | 7, 8 |
+| `regulatory_snapshot` | gold | 8 |
+| `fraud_flags` | gold | 9 |
+
+The layers also organise governance and operations: grants follow them (engineers bronze and
+silver, analysts gold only; masks apply at silver, so gold inherits them — Course 6); the pipeline
+declares them (Course 7); a full refresh may rebuild silver and gold but never bronze (7.9);
+retention and `VACUUM` differ by layer (12). The reconciliation `landing = bronze = silver +
+duplicates + quarantine` is checked at each boundary (3.8, 4, 7.6).
 
 ## The courses
 
@@ -174,13 +207,14 @@ of the code on screen, or a full concept scene (its own section, with the real o
 when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame. A tier other than
 **Run (workspace)** is marked in the Step column.
 
-**1. `intro` · Why Databricks, and Quill Bank · 3**
+**1. `intro` · Why Databricks, and Lakehaven Bank · 4**
 
 | # | Section | Frame | Scene |
 | --- | --- | --- | --- |
 | 1 | Why Databricks exists | concept | warehouse + lake + copies → the lakehouse; the walls table above, condensed |
-| 2 | Quill Bank's data | concept | the five sources → who needs what: finance, risk, branches, regulator, data science |
-| 3 | What we'll build | concept | **the app map**: sources → Volume → bronze → silver → gold → consumers; the finished statement first |
+| 2 | Lakehaven Bank's data | concept | the five sources → who needs what: finance, risk, branches, regulator, data science |
+| 3 | The medallion architecture | concept | landing → bronze → silver → gold with the bank's real tables; what each layer promises, who reads it, and when a layer can be skipped |
+| 4 | What we'll build | concept | **the app map**: sources → landing → bronze → silver → gold → consumers; the finished statement first |
 
 **2. `start` · A workspace and a first table · 6**
 
@@ -189,11 +223,11 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 1 | A workspace and the CLI | `databricks auth login`, `databricks current-user me` | laptop → CLI → workspace REST API; the profile file |
 | 2 | ◆ full scene: where your code runs | concept + lab (`current-user me`, `warehouses list`) | control plane → serverless compute → storage; classic clusters documented |
 | 3 | Databricks Connect | `DatabricksSession.builder.serverless()`; `spark.range(3).show()` | the Spark API you know → Spark Connect → serverless |
-| 4 | Catalogs, schemas, volumes | `quill_dev`, `raw`, the `landing` volume | catalog → schema → table / volume, a three-part name |
-| 5 | Land the first files | `quill_sim` writes 1 October; `databricks fs cp` to the volume | laptop folder → `/Volumes/quill_dev/raw/landing/...` |
-| 6 | The first table | `saveAsTable` → `bronze.card_auths`; `DESCRIBE HISTORY` | a managed Delta table: files + log, version 0 |
+| 4 | Catalogs, schemas, volumes | `lakehaven_dev` with `landing`, `bronze`, `silver`, `gold`; the `card_auths` volume | catalog → one schema per layer → table / volume, a three-part name |
+| 5 | Land the first files | `lakehaven_sim` writes 1 October; `databricks fs cp` to the volume | laptop folder → `/Volumes/lakehaven_dev/landing/card_auths/...` |
+| 6 | The first table | `saveAsTable` → `bronze.card_auths`; `DESCRIBE HISTORY` | the first bronze table: files + log, version 0 |
 
-**3. `land` · Land the card stream · 8**
+**3. `land` · Land the card stream · 8** — landing → bronze
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -206,7 +240,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 7 | Where each row came from | `_metadata.file_path`, `file_modification_time` | row → its source file |
 | 8 | Bronze, reconciled | files landed = rows in bronze + resends + rescued | reconciliation table |
 
-**4. `ledger` · Make the ledger trustworthy · 8**
+**4. `ledger` · Make the ledger trustworthy · 8** — bronze → silver
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -219,7 +253,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 7 | Deletion vectors | a reversal marks rows instead of rewriting files | a data file + its deletion vector |
 | 8 | Change data feed | `table_changes` for whoever reads next | change rows with `_change_type` |
 
-**5. `customers` · Customers and accounts from the core system · 7**
+**5. `customers` · Customers and accounts from the core system · 7** — bronze → silver
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -231,12 +265,12 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 6 | A point-in-time join | a September payment joined to the KYC status *then*, not now | two joins, two answers |
 | 7 | Managed connectors | Lakeflow Connect from the core database (documented if Free Edition lacks it) | CDC tool → files vs connector → table |
 
-**6. `protect` · Protect customers' data · 8**
+**6. `protect` · Protect customers' data · 8** — governance by layer
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
-| 1 | ◆ full scene: Unity Catalog | concept + lab (`SHOW CATALOGS`, `SHOW GRANTS`) | metastore → catalogs → schemas → objects; who needs what at Quill |
-| 2 | Grants | `GRANT USE CATALOG, SELECT` to `finance`, `risk`, `branches` | the securable tree with grants |
+| 1 | ◆ full scene: Unity Catalog | concept + lab (`SHOW CATALOGS`, `SHOW GRANTS`) | metastore → catalogs → schemas → objects; who needs what at Lakehaven |
+| 2 | Grants by layer | `GRANT USE SCHEMA, SELECT`: engineers bronze + silver, `risk` silver, `finance` and `branches` gold only | the schemas per layer, with who may read each |
 | 3 | Column masks | national ID and IBAN masked unless `risk` | one query, two readers |
 | 4 | Row filters | a branch manager sees their region only | rows kept per region |
 | 5 | Tags and classification | `SET TAGS ('pii' = …)`; find every PII column | tagged columns |
@@ -244,11 +278,11 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 7 | Audit | `system.access.audit`: who read `customers` | audit rows |
 | 8 | Erasure vs retention | PII vault keyed by token; erase the vault row, `VACUUM`; facts keep the token | vault ↔ facts, before / after |
 
-**7. `pipeline` · Declare the pipeline · 9**
+**7. `pipeline` · Declare the pipeline · 9** — the whole medallion, declared
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
-| 1 | Why declare | six hand-run notebooks; silver ran before bronze | run order by hand vs a dependency graph |
+| 1 | Why declare | six hand-run notebooks across three layers; silver ran before bronze | run order by hand vs a dependency graph |
 | 2 | Streaming tables | bronze as a streaming table over Auto Loader | append-only, incremental |
 | 3 | Materialized views | gold daily spend | what a refresh recomputes |
 | 4 | The graph | dependencies inferred from reads; drawn from the update's event log | the pipeline graph |
@@ -256,9 +290,9 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 6 | Quarantine | the failing rows kept, not lost | good / quarantine split |
 | 7 | `AUTO CDC` | Course 5's `MERGE` as one declaration, SCD type 2 | before / after code |
 | 8 | The event log | flow progress and expectation metrics | event-log rows |
-| 9 | Full refresh | what it rebuilds; bronze protected from it | which tables a full refresh touches |
+| 9 | Full refresh | silver and gold rebuild from bronze; bronze is protected from it | which layers a full refresh touches |
 
-**8. `serve` · Serve the business · 7**
+**8. `serve` · Serve the business · 7** — silver → gold
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -270,7 +304,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 6 | Alerts | overdrafts above a threshold → notify | rule → condition → notification |
 | 7 | Why a query is slow | query history: files read, bytes pruned | plot: files read per query |
 
-**9. `detect` · Catch card fraud · 8**
+**9. `detect` · Catch card fraud · 8** — silver → `ml` → gold
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -279,7 +313,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 3 | A streaming rule | windows + watermark over bronze; a flags table | window and watermark |
 | 4 | Features in Unity Catalog | velocity, merchant novelty, amount z-score | feature table rows |
 | 5 | MLflow tracking | a logistic regression on labelled September | run → params, metrics, model |
-| 6 | A model in Unity Catalog | `quill_dev.ml.card_fraud@champion` | versions and the alias |
+| 6 | A model in Unity Catalog | `lakehaven_dev.ml.card_fraud@champion` | versions and the alias |
 | 7 | Score the stream | the registered model inside the stream | stream → features → model → flags |
 | 8 | Precision, recall, money | two thresholds: analysts' queue vs fraud caught | plot: the trade-off |
 
@@ -307,7 +341,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 6 | Tests | pytest on transforms with local PySpark (run local); one Connect test | the test pyramid |
 | 7 | CI | GitHub Actions deploys on merge (documented if a service principal is unavailable) | PR → test → deploy |
 
-**12. `operate` · Operate it, and pay for it · 6**
+**12. `operate` · Operate it, and pay for it · 6** — maintenance by layer
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -318,7 +352,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 5 | The finished bank | the whole bundle | **the app map**, every part lit |
 | 6 | Where next | the ct course for breadth; Lakebase, Apps | each part of the bank → where it goes next |
 
-**12 courses, 84 sections, ~2 h 50 min.**
+**12 courses, 85 sections, ~2 h 50 min.**
 
 ## Packaging for YouTube
 
@@ -338,15 +372,15 @@ reads code aloud. A detour ◆ is ≤ 120 s and returns to the bank.
 
 1. Owner review of this plan, and the open decisions below.
 2. Infra: port `spark-ecommerce-analytics`' IDE template, `spine.py`, checks, registry and shots;
-   extend the replay to the workspace (CLI profile, normalisation, volatile masks); `quill_sim`.
+   extend the replay to the workspace (CLI profile, normalisation, volatile masks); `lakehaven_sim`.
 3. Course 2 as the pilot → owner review.
 4. Courses 1, 3–12 one at a time, each reviewed on its rendered routes, then narrated.
 5. Record all 12 → assemble and publish the one video.
 
 ## Decisions
 
-1. Bank: **Quill Bank** (fictional); app `quill-lakehouse`, package `quill`, catalogs
-   `quill_dev` / `quill_prod`.
+1. Bank: **Lakehaven Bank** (fictional); app `lakehaven`, package `lakehaven`, catalogs
+   `lakehaven_dev` / `lakehaven_prod`.
 2. Platform: **Databricks Free Edition**, serverless only; every output run there unless tiered.
 3. Prerequisite: the Spark series. Spark and open-source Delta are referenced, not re-taught.
 4. One video, one continuous story: 12 courses.
@@ -355,6 +389,8 @@ reads code aloud. A detour ◆ is ≤ 120 s and returns to the bank.
 6. Current product names, with the former name said once for recognition: Lakeflow pipelines
    (built on Spark Declarative Pipelines; formerly DLT), Lakeflow Jobs, Declarative Automation
    Bundles (formerly Databricks Asset Bundles), data profiling (formerly Lakehouse Monitoring).
+7. Layout: the **medallion architecture**, one schema per layer (`landing`, `bronze`, `silver`,
+   `gold`) in each catalog, plus `vault` and `ml`.
 
 ## Open decisions (owner)
 
@@ -367,5 +403,5 @@ reads code aloud. A detour ◆ is ≤ 120 s and returns to the bank.
 3. **Course 9 scope.** Fraud detection with MLflow is in, because data and AI on one platform is why
    Databricks exists; it can be cut to the rules-only sections (1–3) if the course should stay pure
    data engineering.
-4. **Length.** 84 sections is ~25 minutes longer than the Python course. Candidates to cut: 5.7,
+4. **Length.** 85 sections is ~25 minutes longer than the Python course. Candidates to cut: 5.7,
    8.7, 12.4.
