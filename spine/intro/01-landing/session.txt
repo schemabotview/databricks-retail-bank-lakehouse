@@ -1,0 +1,24 @@
+$ python what_landed.py
+source        files   records  days
+app_events     1463   137,444  2026-09-01 → 2026-10-31
+card_auths     5694   354,232  2026-09-01 → 2026-10-31
+chargebacks       1       120  —
+core_cdc        121    12,655  2026-09-01 → 2026-10-31
+fx_rates         61       183  2026-09-01 → 2026-10-31
+postings         61    29,624  2026-09-01 → 2026-10-31
+privacy           1         1  —
+reference         3       420  —
+settlements      63   342,521  2026-09-02 → 2026-11-03
+$ head -n 1 landing/card_auths/2026-10-15/auths-0900.json | python -m json.tool
+{
+    "auth_id": "au-2737151f9435",
+    "card_id": "K002112",
+    "merchant_id": "M0006",
+    "mcc": "5812",
+    "amount": 57.72,
+    "currency": "EUR",
+    "auth_ts": "2026-10-15T08:58:26Z",
+    "entry_mode": "contactless",
+    "status": "APPROVED",
+    "wallet_type": null
+}

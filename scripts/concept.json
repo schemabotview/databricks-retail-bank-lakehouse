@@ -1,0 +1,8 @@
+{
+  "_comment": "Per-repo publishing identity, read by @graphlearning/shell's thumb / gen-descriptions scripts. Env vars (CONCEPT, SITE, APP_PATH, HASHTAGS, PANEL_BG) still override.",
+  "concept": "Databricks",
+  "site": "https://graphl.in",
+  "appPath": "/databricks-retail-bank-lakehouse",
+  "hashtags": "#Databricks #Lakehouse #DataEngineering #TechEducation",
+  "panelBg": "radial-gradient(118% 104% at 70% 34%, #ff7a5c 0%, #ff3621 44%, #14100e 100%)"
+}

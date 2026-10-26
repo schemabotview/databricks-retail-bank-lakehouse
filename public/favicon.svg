@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Databricks — GraphL">
+  <!-- GraphL concept tile. Per-repo swaps: fill (match --brand) + the letter + the aria-label.
+       Everything else is shared across every concept repo. -->
+  <rect width="64" height="64" rx="12" fill="#ff3621" />
+  <text
+    x="32" y="34"
+    text-anchor="middle" dominant-baseline="central"
+    font-family="system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif"
+    font-size="40" font-weight="700" letter-spacing="-1"
+    fill="#ffffff"
+  >d</text>
+</svg>

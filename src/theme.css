@@ -1,0 +1,6 @@
+/* This repo's whole design surface — the token @graphlearning/shell leaves to the repo. Imported
+   AFTER the shell's stylesheet in main.tsx, so it wins the cascade. Databricks red-orange as
+   --brand, as in databricks-data-engineer-ct. */
+:root {
+  --brand: #ff3621;
+}

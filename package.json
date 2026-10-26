@@ -1,0 +1,43 @@
+{
+  "name": "databricks-retail-bank-lakehouse",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Learn Databricks by building a retail bank lakehouse: a GraphL concept app. Scenes render with @graphlearning/graphl-flow; the app shell is @graphlearning/shell.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check": "node scripts/check-content.mjs && node scripts/check-render.mjs",
+    "preview": "vite preview",
+    "build:snapshot": "vite build --outDir dist-snapshot",
+    "capture": "vite preview --outDir dist-snapshot --port 5181",
+    "capture:shots": "graphl-capture-shots",
+    "record": "graphl-record",
+    "record:all": "graphl-record-all",
+    "record:reels": "graphl-record-reels",
+    "shots:4k": "graphl-shots-4k",
+    "gen:audio": "graphl-gen-audio",
+    "gen:desc": "graphl-gen-desc",
+    "thumb": "graphl-thumb",
+    "check:spine": "python3.12 scripts/spine.py",
+    "shots": "node scripts/shots.mjs",
+    "gen": "python3.12 -m globalbank_sim"
+  },
+  "dependencies": {
+    "@graphlearning/graphl-flow": "^0.3.0",
+    "@graphlearning/shell": "^1.0.2",
+    "lucide-react": "^1.28.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "esbuild": "^0.25.0",
+    "playwright": "1.63.0",
+    "puppeteer": "^25.3.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5"
+  }
+}

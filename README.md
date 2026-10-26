@@ -11,9 +11,26 @@ Planned as **one video: "Learn Databricks by building a retail bank lakehouse: f
 beginner to professional"** (~2 h 50 min, 12 courses, 85 sections). Prerequisite: the Spark series
 (`spark-ecommerce-analytics`).
 
-**Status:** plan v1, awaiting owner review. Scope, sections, data and run tiers are in
-[`COURSE-PLAN.md`](COURSE-PLAN.md); authoring rules and per-course status are in
-[`CLAUDE.md`](CLAUDE.md). Nothing is built yet, so there is nothing to run.
+**Status:** Course 1 (`intro`) is authored; Courses 2–12 wait on access to a Databricks Free
+Edition workspace. Scope, sections, data and run tiers are in [`COURSE-PLAN.md`](COURSE-PLAN.md);
+authoring rules and per-course status are in [`CLAUDE.md`](CLAUDE.md).
+
+## Run it
+
+```sh
+npm install
+npm run dev          # http://localhost:5173  ·  routes are #/<course>-<section>
+```
+
+## Verify a change
+
+```sh
+scripts/install-toolchain.sh                          # once: CPython 3.12.15 as python3.12
+npm run build && npx tsc --noEmit && npm run check    # check: content + 4K render
+python3.12 scripts/spine.py                           # replays every step (workspace steps need credentials)
+python3.12 -m globalbank_sim verify                   # every planted problem is in the data
+npm run shots -- <course>                             # 4K PNGs in out/shots/, then look at them
+```
 
 ## The architecture
 
@@ -38,7 +55,7 @@ and what a full refresh may rebuild.
 | deploy from git, tested | Declarative Automation Bundles, CI | 11 `ship` |
 | see its cost and stay fast | system tables, liquid clustering | 12 `operate` |
 
-## Layout (planned)
+## Layout
 
 ```
 src/content/<course>/    one file per section + the course index

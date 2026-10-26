@@ -1,0 +1,3 @@
+{
+  "_comment": "Curated publish titles (YouTube title + thumbnail header) per course, keyed by course id. Search-first: what someone would actually type, never 'Course 4'. One entry per course in src/content/index.ts; each course adds its own when it is authored."
+}

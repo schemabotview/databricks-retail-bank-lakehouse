@@ -1,0 +1,48 @@
+# Build the Vite app and deploy it to GitHub Pages on every push to main. The site is served at
+# graphl.in/<repo-slug>/ — the apex custom domain is inherited from the org's
+# schemabotview.github.io Pages site, and vite.config.ts sets `base` to /<repo-slug>/ for the
+# production build so asset URLs are subpath-relative. The render engine and app shell are published
+# npm packages (@graphlearning/graphl-flow, @graphlearning/shell), so no sibling repo checkout is needed —
+# which also means a `file:` install must never be committed, as CI has no sibling checkout to
+# resolve it against.
+#
+# Before the first deploy: enable Pages for the repo with "GitHub Actions" as the source
+# (Settings → Pages → Build and deployment → Source).
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a newer push supersede a queued deploy, but never cancel a run mid-deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install deps
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deploy
+        uses: actions/deploy-pages@v4

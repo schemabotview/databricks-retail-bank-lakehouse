@@ -1,6 +1,6 @@
 # Learn Databricks by building a retail bank lakehouse: full course, beginner to professional — plan
 
-**Status: v1 plan, awaiting owner review (2026-10-26).** Nothing is authored yet.
+**Status: v1 plan (2026-10-26). Course 1 authored; Courses 2–12 wait on workspace access (Open decisions, 1).**
 
 ## The idea
 
@@ -87,8 +87,8 @@ Pinned once the Course 2 infra is built, then never changed. Candidates at the t
 | Tool | Candidate | Why |
 | --- | --- | --- |
 | Databricks CLI | latest at infra time | `auth`, `fs`, `bundle`, `pipelines`, `jobs` |
-| `databricks-connect` | 19.3.x (PyPI latest, needs Python 3.12) | must match what Free Edition's serverless environment accepts — verified in 2.3, not assumed |
-| Python | 3.12 | `databricks-connect` 19.3 requires `==3.12.*` |
+| `databricks-connect` | 18.3.x | the docs' compatibility table (checked 2026-10-26) pairs serverless environment version 5 with Connect 18.0–18.3 and Python 3.12; PyPI's newest, 19.3, is ahead of serverless. Confirmed against the workspace in 2.3, not assumed |
+| Python | **3.12.15** (pinned, `scripts/install-toolchain.sh`) | Connect 18.3 requires 3.12; installed as `python3.12`, so the Spark course's `python` 3.14 is untouched |
 | `databricks-sdk` | 0.157.x | statement execution, system tables, the event log |
 | `pyspark` + `delta-spark` (tests only, separate venv) | 4.2.0 + 4.4.1 | the same pair as `spark-ecommerce-analytics`; Connect and PySpark cannot share a venv |
 | `mlflow`, `scikit-learn` | at Course 9 | the fraud model |
@@ -102,14 +102,19 @@ how the landing zone of a real bank is fed by a vendor or a CDC tool.
 
 | Source | Arrives as | Shape | Like a real bank's |
 | --- | --- | --- | --- |
-| Card authorizations | JSON, one file every 5 minutes | `auth_id, card_id, merchant_id, mcc, amount, currency, ts, status` | card processor's feed |
+| Card authorizations | JSON lines, one file every 15 minutes | `auth_id, card_id, merchant_id, mcc, amount, currency, auth_ts, entry_mode, status` (+ `wallet_type` from 15 October) | card processor's feed |
 | Settlements | CSV, once a day, 1–3 days late | `auth_id, settled_amount, settled_ts` | the scheme's clearing file |
 | Core banking CDC | JSON change records | `op (I/U/D), seq, ts, table, before/after` for customers, accounts, KYC | a CDC tool reading the core system |
-| Mobile app events | JSON | `session_id, customer_id, event, app_version, ts` | app telemetry |
+| Core banking postings | CSV, once a day | `posting_id, account_id, kind (SALARY / RENT / TRANSFER), amount, posted_date` | the core system's non-card movements (balances need them, 8.2) |
+| Mobile app events | JSON lines, hourly | `session_id, customer_id, event, app_version, ts` (+ `device_os` from 5.2.0) | app telemetry |
 | Reference | CSV | merchants, MCC codes, branches/regions, daily FX rates | reference data |
+| Labels and requests | CSV | September's chargebacks (confirmed fraud), the privacy team's erasure requests | the fraud team, the privacy team |
 
-Sized to stay well inside the daily quota (order of magnitude: 5,000 customers, ~6,500 accounts,
-~40 days of card authorizations, a few hundred thousand rows). Final sizes are frozen in Course 2.
+Built and frozen 2026-10-26 (`python -m globalbank_sim`, seed 2026, SF 1, stdlib only; two runs
+are byte-identical; ~27 s; Course 1's lab shows the real counts): 1 September – 31 October, 5,000
+customers, 5,694 card files holding 354,232 authorizations, 342,521 clearing rows running to
+3 November, 12,655 core changes, 29,624 postings, 137,444 app events. Sized to replay inside the
+daily quota; `--from/--to/--only` land a slice for a step.
 
 **Planted problems**, each a named constant in `globalbank_sim/model.py` and asserted by `verify`:
 
@@ -122,7 +127,7 @@ Sized to stay well inside the daily quota (order of magnitude: 5,000 customers, 
 - **An erasure request** for one customer, against an illustrative record-retention rule. (6)
 - **A card-testing ring**: many small authorizations on new merchants within minutes. (9)
 - **Skew**: one supermarket chain is ~20% of transactions. (12)
-- **Small files**: 5-minute landing becomes thousands of files. (12)
+- **Small files**: 15-minute landing becomes thousands of files (5,694 in two months). (12)
 - **Foreign spend**: authorizations in USD and GBP, converted with the daily FX file. (8)
 
 Regulatory rules and thresholds are **illustrative**, labelled so, and never legal advice.
@@ -186,7 +191,7 @@ Course 9).
 
 | Table | Layer | Built in |
 | --- | --- | --- |
-| `card_auths`, `settlements`, `core_cdc`, `app_events` | bronze | 2, 3 |
+| `card_auths`, `settlements`, `core_cdc`, `postings`, `app_events` | bronze | 2, 3, 4, 5 |
 | `card_transactions` | silver | 4 |
 | `customers`, `customers_history`, `accounts`, `merchants`, `fx_rates` | silver | 5, 8 |
 | `card_transactions_quarantine` | silver | 7 |
@@ -214,7 +219,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 1 | Why Databricks exists | concept | warehouse + lake + copies → the lakehouse; the walls table above, condensed |
 | 2 | Global Bank's data | concept | the five sources → who needs what: finance, risk, branches, regulator, data science |
 | 3 | The medallion architecture | concept | landing → bronze → silver → gold with the bank's real tables; what each layer promises, who reads it, and when a layer can be skipped |
-| 4 | What we'll build | concept | **the app map**: sources → landing → bronze → silver → gold → consumers; the finished statement first |
+| 4 | What we'll build | concept | **the app map**: sources → landing → bronze → silver → gold → consumers; the finished statement joins it once Course 12 runs |
 
 **2. `start` · A workspace and a first table · 6**
 
@@ -346,7 +351,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
 | 1 | What it costs | `system.billing.usage` by job and pipeline, in DBUs | plot: DBUs per resource |
-| 2 | Small files | thousands of 5-minute files; `OPTIMIZE` | files before / after |
+| 2 | Small files | thousands of 15-minute files; `OPTIMIZE` | files before / after |
 | 3 | Liquid clustering | `CLUSTER BY (card_id, txn_date)`; the skewed merchant | files read before / after |
 | 4 | Predictive optimization | what it runs for managed tables, and what it does not | its operations, from history |
 | 5 | The finished bank | the whole bundle | **the app map**, every part lit |

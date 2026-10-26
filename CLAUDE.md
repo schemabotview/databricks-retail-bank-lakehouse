@@ -25,12 +25,17 @@ and pinned. Sister repos:
 
 ## Status
 
-Plan v1 written 2026-10-26, awaiting owner review. No infra, scenes, spine or narration yet.
+2026-10-26: infra ported, `globalbank_sim` built and verified, Course 1 authored (concept frames,
+lab replayed, rendered at 4K, checked, looked at). **Courses 2–12 are blocked on workspace access**:
+no `DATABRICKS_HOST` / `DATABRICKS_TOKEN` in the authoring environment, and every section from 2
+on is a workspace run. They are not authored against a local stand-in: that would be the Spark
+course again, and every frame would be redone once the workspace exists. The owner reviews at the
+end (2026-10-26: "do course by course till end").
 
 | # | Course | Sections | Status |
 | --- | --- | --- | --- |
-| 1 | `intro` | 4 | not started |
-| 2 | `start` | 6 | not started (pilot) |
+| 1 | `intro` | 4 | authored, replayed (lab), rendered, looked at; no audio |
+| 2 | `start` | 6 | blocked: needs the workspace (pilot) |
 | 3 | `land` | 8 | not started |
 | 4 | `ledger` | 8 | not started |
 | 5 | `customers` | 7 | not started |
@@ -41,6 +46,27 @@ Plan v1 written 2026-10-26, awaiting owner review. No infra, scenes, spine or na
 | 10 | `schedule` | 7 | not started |
 | 11 | `ship` | 7 | not started |
 | 12 | `operate` | 6 | not started |
+
+## The toolchain
+
+CPython **3.12.15** as `python3.12` (`scripts/install-toolchain.sh`, also usable as the cloud
+environment's setup script): databricks-connect 18.3 (serverless environment version 5) needs 3.12.
+It does not relink `python` — the Spark course owns that on a shared machine; `spine.py` puts a
+`python` → python3.12 link first on PATH inside a replay. The Databricks CLI is pinned in Course 2.
+The generator is standard library only, so the repo needs no venv of its own.
+
+## The data: `globalbank_sim`
+
+A seeded generator of Global Bank's September and October (port of `shopwave_gen`): every source
+drawn from its own random stream keyed by (seed, source, day), so a slice is byte-identical to the
+same slice of a full run; the core system's history (changes need the state they change) is
+computed once and cached. Every planted problem (the 14 October batch in cents, `wallet_type` on 15
+October, the `"12,50"` partner rows, resends, late arrivals, reversals, clearing past month end, the
+out-of-order CDC pair, the three card-testing rings and September's chargebacks, the skewed
+supermarket, foreign spend, the erasure request) is a named constant in `model.py`, asserted by
+`python3.12 -m globalbank_sim verify`. Change the generator only with `verify` green and every
+spine step's `generated` check green. Identifiers use formats no country issues (`XN…` national
+ids, the unassigned `ZZ` IBAN country, `@example.com` emails).
 
 ## The medallion layout
 
@@ -74,11 +100,12 @@ illustrative and labelled so; nothing is legal advice. Check Free Edition limits
 type, 5 concurrent job tasks, one 2X-Small warehouse, no account console) before designing a step
 that could hit them.
 
-## The spine (planned: port, then extend)
+## The spine
 
 `spine/<course>/<NN-step>/` = `project/` + `session.txt` + `step.json`, replayed by `scripts/spine.py`
 exactly as in `spark-ecommerce-analytics` (`first` / `from` + `changes` / `lab`; generated data by
-spec, never committed). What the workspace adds:
+spec into `landing/`, never committed). Built: no JVM or jars; `{"workspace": true}` steps. What the
+workspace adds:
 
 - **The replay talks to a live workspace** through a CLI profile from the environment (host + token
   as secrets, never committed, never printed). Without them a workspace step cannot replay.
@@ -97,16 +124,16 @@ spec, never committed). What the workspace adds:
 | fixed side pane. Every IDE side pane carries a diagram. No edges between panes. A detour (◆) that
 cannot fit the side pane at ≥ 24px is a full concept scene with the real output inside it.
 **The workspace UI is never screenshotted**: pipeline graphs, lineage, query profiles, job runs and
-dashboards are drawn from the API's own numbers (event log, system tables, run output). There is no
-`databricks` or `delta` brand mark in the engine: `spark` for Spark, lucide `layers` for Delta,
-`cloud` for the platform.
+dashboards are drawn from the API's own numbers (event log, system tables, run output). graphl-flow's
+Azure set has a `databricks` tile (used for the platform, as in 1.1); there is no Delta mark: lucide
+`layers` for Delta, `spark` for Spark.
 
 ## Checks, before handing over
 
 ```sh
 npm run build && npx tsc --noEmit && npm run check   # check-content + check-render (4K)
-python scripts/spine.py <course>                     # replays against the workspace
-python -m globalbank_sim verify
+python3.12 scripts/spine.py <course>                 # workspace steps need DATABRICKS_HOST/TOKEN
+python3.12 -m globalbank_sim verify
 npm run shots -- <course>                            # then LOOK at out/shots/
 ```
 
