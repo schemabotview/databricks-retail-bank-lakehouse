@@ -1,7 +1,7 @@
 # databricks-retail-bank-lakehouse
 
 **Learn Databricks by building a retail bank lakehouse.** A GraphL concept app: one application,
-`lakehaven`, the data platform of Lakehaven Bank (fictional), grows from a few card files in a
+`globalbank`, the data platform of Global Bank (fictional), grows from a few card files in a
 Volume to a governed, declared, scheduled and tested lakehouse that serves finance, risk, branch
 managers, the regulator and a fraud model. Every Databricks feature is taught at the moment the bank
 needs it, in real code **run on a Databricks Free Edition workspace**. Scenes render with
@@ -24,7 +24,7 @@ and what a full refresh may rebuild.
 
 ## The arc
 
-| Lakehaven Bank needs to… | Databricks feature | Course |
+| Global Bank needs to… | Databricks feature | Course |
 | --- | --- | --- |
 | query card files without running a cluster | serverless, Databricks Connect, Volumes | 2 `start` |
 | ingest every new file exactly once | Auto Loader | 3 `land` |
@@ -44,6 +44,6 @@ and what a full refresh may rebuild.
 src/content/<course>/    one file per section + the course index
 src/scenes/<course>/     declarative scenes (never x/y)
 spine/<course>/<step>/   the app as real files, one cumulative snapshot per step
-lakehaven_sim/           the seeded data generator (owned, synthetic data)
+globalbank_sim/          the seeded data generator (owned, synthetic data)
 scripts/                 spine.py, check-content, check-render, registry, shots
 ```

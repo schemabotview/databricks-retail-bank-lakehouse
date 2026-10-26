@@ -4,8 +4,8 @@
 
 ## What this repo is
 
-A GraphL concept app: **learn Databricks by building a retail bank lakehouse**, `lakehaven`,
-the data platform of Lakehaven Bank (fictional), from a few files in a Volume to a governed, declared,
+A GraphL concept app: **learn Databricks by building a retail bank lakehouse**, `globalbank`,
+the data platform of Global Bank (fictional), from a few files in a Volume to a governed, declared,
 scheduled, tested lakehouse, **run on a real Databricks Free Edition workspace**. A **section** is
 `(scene, narration)`: one full-screen 16:9 frame, one chapter of the video.
 
@@ -44,7 +44,7 @@ Plan v1 written 2026-10-26, awaiting owner review. No infra, scenes, spine or na
 
 ## The medallion layout
 
-One schema per layer in each catalog (`lakehaven_dev`, `lakehaven_prod`): `landing` (Volumes) →
+One schema per layer in each catalog (`globalbank_dev`, `globalbank_prod`): `landing` (Volumes) →
 `bronze` → `silver` → `gold`, plus `vault` (PII by token) and `ml`. A table's layer is decided in
 `COURSE-PLAN.md`'s table list, never ad hoc; gold reads only silver, and consumers (dashboards,
 `finance`, `branches`) read only gold. Each layer's promise (complete / correct / ready) is what a
@@ -82,13 +82,13 @@ spec, never committed). What the workspace adds:
 
 - **The replay talks to a live workspace** through a CLI profile from the environment (host + token
   as secrets, never committed, never printed). Without them a workspace step cannot replay.
-- **Normalisation**: the host is shown as `https://lakehaven.cloud.databricks.com`, the user as
-  `ana@lakehavenbank.example`, local paths as `/home/ana/lakehaven`. Normalise in the replay, never
+- **Normalisation**: the host is shown as `https://globalbank.cloud.databricks.com`, the user as
+  `ana@globalbank.example`, local paths as `/home/ana/globalbank`. Normalise in the replay, never
   by hand in a scene.
 - **Volatile by nature**: run ids, update ids, job ids, timestamps, durations, URLs. Masked in the
   comparison; a scene READS such a value from the session, and narration never says it.
 - **Every step starts from a known workspace state**: a step's setup drops and recreates what it
-  owns under `lakehaven_dev`, so replays do not depend on order or on a previous run.
+  owns under `globalbank_dev`, so replays do not depend on order or on a previous run.
 - **The daily fair-usage quota is a budget**: keep data small, and replay one course at a time.
 
 ## Frames
@@ -106,7 +106,7 @@ dashboards are drawn from the API's own numbers (event log, system tables, run o
 ```sh
 npm run build && npx tsc --noEmit && npm run check   # check-content + check-render (4K)
 python scripts/spine.py <course>                     # replays against the workspace
-python -m lakehaven_sim verify
+python -m globalbank_sim verify
 npm run shots -- <course>                            # then LOOK at out/shots/
 ```
 
