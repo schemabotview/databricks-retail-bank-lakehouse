@@ -54,7 +54,7 @@ from globalbank.session import get_spark
 spark = get_spark()
 done = refused = 0
 reasons = set()
-for statement in open(sys.argv[1]).read().split(';'):
+for statement in open(sys.argv[1]).read().split(';\n'):  # one per line end
     sql = '\\n'.join(line for line in statement.splitlines()
                     if not line.lstrip().startswith('--')).strip()
     if not sql:
@@ -66,8 +66,9 @@ for statement in open(sys.argv[1]).read().split(';'):
         print(f'ok   {shown}')
     except Exception as e:
         refused += 1
-        reason = re.search(r'\\[([A-Z_]+)', str(e))
-        reasons.add(reason.group(1) if reason else type(e).__name__)
+        reason = re.search(r'ErrorClass=([A-Z_]+)|\\[([A-Z_]{4,})[.\\]]', str(e))
+        reasons.add(next(filter(None, reason.groups())) if reason
+                    else type(e).__name__)
         print(f'no   {shown}')
 print(f'{done} applied, {refused} refused' +
       (f': {", ".join(sorted(reasons))}' if reasons else ''))
@@ -101,7 +102,7 @@ ALTER TABLE globalbank_dev.silver.accounts
   ALTER COLUMN iban SET MASK globalbank_dev.governance.unless_risk;
 """
 
-FILTERS = """-- A branch manager sees their region's customers; risk sees every region.
+FILTERS = """-- A branch manager sees their region's customers, and risk every region.
 CREATE OR REPLACE FUNCTION globalbank_dev.governance.my_region(
   row_region STRING)
 RETURNS BOOLEAN
@@ -180,7 +181,8 @@ tagged = spark.sql("""
     WHERE tag_name = 'pii' ORDER BY ALL""").collect()
 print(f'{len(tagged)} columns tagged pii in globalbank_dev:')
 for t in tagged:
-    print(f'  {t.schema_name}.{t.table_name}.{t.column_name:<14} {t.tag_value}')
+    name = f'{t.schema_name}.{t.table_name}.{t.column_name}'
+    print(f'  {name:<32}{t.tag_value}')
 '''
 
 LINEAGE = '''"""Which tables each table was built from, as Unity Catalog recorded it."""
@@ -193,7 +195,7 @@ edges = spark.sql("""
                source_path, '/Volumes/[^/]+/([^/]+/[^/]+)', 1)) AS source,
            target_table_full_name AS target
     FROM system.access.table_lineage
-    WHERE target_table_catalog = 'globalbank_dev'
+    WHERE target_table_catalog = 'globalbank_dev' AND source_type IS NOT NULL
       AND event_time > current_timestamp() - INTERVAL 2 HOURS
       AND target_table_full_name IN (SELECT table_catalog || '.' || table_schema
           || '.' || table_name FROM globalbank_dev.information_schema.tables)
@@ -248,15 +250,15 @@ spark = get_spark()
 spark.sql(f"DELETE FROM {VAULT} WHERE customer_id = '{customer}'")
 last = spark.sql(f'DESCRIBE HISTORY {VAULT} LIMIT 1').first()
 m = last.operationMetrics
-print(f"version {last.version}: deleted {m['numDeletedRows']} row,"
+print(f"version {last.version}: deleted {m['numDeletedRows']} row(s),"
       f" deletion vectors added {m.get('numDeletionVectorsAdded', 0)}")
 for v in (last.version - 1, last.version):
     n = spark.sql(f"""SELECT count(*) FROM {VAULT} VERSION AS OF {v}
                       WHERE customer_id = '{customer}'""").first()[0]
-    print(f'  version {v} holds them: {n} row')
+    print(f'  version {v} holds them: {n} row(s)')
 facts = spark.sql(f"""SELECT count(*) FROM globalbank_dev.silver.accounts
                       WHERE customer_id = '{customer}'""").first()[0]
-print(f'silver.accounts still holds {facts} account rows for {customer}')
+print(f'silver.accounts still holds {facts} account row(s) for {customer}')
 '''
 
 PURGE = '''"""Make an erasure physical: rewrite the files, then remove the old ones."""
@@ -269,9 +271,11 @@ spark.sql(f'REORG TABLE {VAULT} APPLY (PURGE)')
 m = spark.sql(f'DESCRIBE HISTORY {VAULT} LIMIT 1').first().operationMetrics
 print(f"REORG ... PURGE: {m['numAddedFiles']} file written,"
       f" {m['numRemovedFiles']} removed from the table")
-vacuum = spark.sql(f'VACUUM {VAULT}').collect()
-print(f'VACUUM: {len(vacuum)} files deleted now; the removed file is'
-      ' deleted once it is older than the 7-day retention')
+spark.sql(f'VACUUM {VAULT}')
+start = spark.sql(f"DESCRIBE HISTORY {VAULT}").where(
+    "operation = 'VACUUM START'").first().operationMetrics
+print(f"VACUUM: {start['numFilesToDelete']} files deleted now: the removed file"
+      ' goes once it is older than the 7-day retention')
 '''
 
 INGESTED = [RESET, CAT, 'bash land.sh 2026-09-01 core_cdc 2026-10-31 > /dev/null',

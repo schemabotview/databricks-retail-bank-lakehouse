@@ -72,10 +72,6 @@ from databricks.sdk import WorkspaceClient
 from globalbank.deploy import NAME
 from globalbank.session import get_spark
 
-REFRESH = {'MAINTENANCE_TYPE_COMPLETE_RECOMPUTE': 'recomputed',
-           'MAINTENANCE_TYPE_ROW_BASED': 'incremental, by row',
-           'MAINTENANCE_TYPE_PARTITION_OVERWRITE': 'incremental, by partition',
-           'MAINTENANCE_TYPE_NO_OP': 'nothing new'}
 
 
 def start(w, pipeline_id, **kwargs):
@@ -96,6 +92,11 @@ if __name__ == '__main__':
            .update.state.value) not in ('COMPLETED', 'FAILED', 'CANCELED'):
         time.sleep(10)
     print(f'update {state}')
+    if state != 'COMPLETED':
+        errors = [e.message for e in w.pipelines.list_pipeline_events(
+            pipeline.pipeline_id,
+            filter=f"level='ERROR' AND update_id='{update}'")]
+        raise SystemExit('\\n'.join(m[:78] for m in errors[-2:]))
     spark = get_spark()
     events = spark.sql(f"""SELECT * FROM event_log('{pipeline.pipeline_id}')
                            WHERE origin.update_id = '{update}'""")
@@ -110,7 +111,8 @@ if __name__ == '__main__':
         'origin.flow_name AS f', f'{chosen} AS t').collect()}
     for d in sorted(r.name for r in datasets if r.name.count('.') == 2):
         rows = spark.table(d).count()
-        how = f'  ({REFRESH.get(plans[d], plans[d])})' if d in plans else ''
+        how = (plans.get(d) or '').removeprefix('MAINTENANCE_TYPE_').lower()
+        how = f'  ({how})' if how else ''  # how a materialized view refreshed
         print(f"  {d.replace('globalbank_dev.', ''):<36}{rows:>9,} rows{how}")
 '''
 
@@ -214,9 +216,10 @@ CUSTOMER = ('customer_id STRING, first_name STRING, last_name STRING,'
 @dp.temporary_view()
 def customer_changes():
     return spark.sql(f\"\"\"
-        SELECT op, seq, ts, from_json(after, '{CUSTOMER}').*
-        FROM STREAM(globalbank_dev.bronze.core_cdc)
-        WHERE `table` = 'customers'\"\"\")
+        SELECT op, seq, ts, c.*
+        FROM (SELECT op, seq, ts, from_json(after, '{CUSTOMER}') AS c
+              FROM STREAM(globalbank_dev.bronze.core_cdc)
+              WHERE `table` = 'customers')\"\"\")
 
 
 # Course 5's MERGE, out-of-order guard and all, as one declaration each.
@@ -350,7 +353,7 @@ step(P, '02-streaming-tables', f'{P}/01-why-declare', ['globalbank/deploy.py', '
      [DEP, RUN1, 'bash land.sh 2026-10-02 | wc -l', RUN1], PIPE + LAND1)
 step(P, '03-materialized-views', f'{P}/02-streaming-tables', ['pipelines/silver.py', 'pipelines/gold.py'],
      {'pipelines/silver.py': SILVER_MV, 'pipelines/gold.py': GOLD},
-     [DEP, RUN1, 'bash land.sh 2026-10-02 | wc -l', RUN1], PIPE + LAND1)
+     [DEP, RUN1, 'bash land.sh 2026-10-02 > /dev/null', RUN1], PIPE + LAND1)
 step(P, '04-graph', f'{P}/03-materialized-views', ['globalbank/graph.py'], {'globalbank/graph.py': GRAPH},
      ['python -m globalbank.graph'], PIPE + LAND1 + [q(DEP), q(RUN1)])
 step(P, '05-expectations', f'{P}/04-graph', ['pipelines/silver.py', 'globalbank/quality.py'],

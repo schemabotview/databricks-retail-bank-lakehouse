@@ -103,11 +103,12 @@ ACCOUNT = ('account_id STRING, customer_id STRING, product STRING,'
 @dp.temporary_view()
 def account_changes():
     return spark.sql(f\"\"\"
-        SELECT op, seq, coalesce(from_json(after, '{ACCOUNT}').account_id,
-                                 key:account_id) AS account_id,
-               from_json(after, '{ACCOUNT}').* EXCEPT (account_id)
-        FROM STREAM(globalbank_dev.bronze.core_cdc)
-        WHERE `table` = 'accounts'\"\"\")
+        SELECT op, seq, coalesce(a.account_id, k) AS account_id,
+               a.* EXCEPT (account_id)
+        FROM (SELECT op, seq, key:account_id AS k,
+                     from_json(after, '{ACCOUNT}') AS a
+              FROM STREAM(globalbank_dev.bronze.core_cdc)
+              WHERE `table` = 'accounts')\"\"\")
 
 
 dp.create_streaming_table('globalbank_dev.silver.accounts')
