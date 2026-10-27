@@ -6,4 +6,4 @@ User: ana@globalbank.example
 Authenticated with: pat
 $ databricks warehouses list
 ID                Name                          Size      State
-7a06078381fd06fa  Serverless Starter Warehouse  2X-Small  STOPPED
+607f66819bfdd1b3  Serverless Starter Warehouse  2X-Small  STOPPED

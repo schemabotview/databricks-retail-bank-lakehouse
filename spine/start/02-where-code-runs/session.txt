@@ -15,4 +15,4 @@ Current configuration:
   ✓ discovery_url: https://globalbank.cloud.databricks.com/oidc/.well-known/oauth-authorization-server
 $ databricks warehouses list
 ID                Name                          Size      State
-7a06078381fd06fa  Serverless Starter Warehouse  2X-Small  STOPPED
+607f66819bfdd1b3  Serverless Starter Warehouse  2X-Small  STOPPED

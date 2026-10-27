@@ -11,8 +11,10 @@ catalog used all of it (2026-10-27: 9 live volumes, a quota count of 50), and no
 created for a week. Dropped TABLES count against the table quota (500) the same way, so a replay
 drops only the tables, and volumes are emptied, never dropped.
 
-What it does: create the catalog and the layer schemas if missing; drop every table and view in the
-catalog's own schemas; delete every file and folder inside every volume, keeping the volume.
+What it does: delete the course's own pipelines and jobs (named `globalbank…`, Courses 7 on: a
+pipeline owns its tables, and Free Edition allows one pipeline per type); create the catalog if
+missing; drop every table, view and function in the catalog's own schemas; delete every file and
+folder inside every volume, keeping the volume.
 """
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.errors import NotFound
@@ -22,25 +24,51 @@ KEEP = {'information_schema', 'default'}
 
 
 def empty(w: WorkspaceClient, path: str) -> None:
-    for entry in w.files.list_directory_contents(path):
-        if entry.is_directory:
-            empty(w, entry.path)
-            w.files.delete_directory(entry.path)
-        else:
-            w.files.delete(entry.path)
+    # A listing can still name an entry a moment after it is deleted (a replay once failed on one):
+    # an entry already gone is what we wanted.
+    for entry in list(w.files.list_directory_contents(path)):
+        try:
+            if entry.is_directory:
+                empty(w, entry.path)
+                w.files.delete_directory(entry.path)
+            else:
+                w.files.delete(entry.path)
+        except NotFound:
+            pass
 
 
 def main() -> None:
     w = WorkspaceClient()
+    for pipeline in w.pipelines.list_pipelines():
+        if (pipeline.name or '').startswith('globalbank'):
+            try:
+                w.pipelines.delete(pipeline.pipeline_id)
+            except NotFound:  # the listing can still name one deleted a moment ago
+                pass
+    for job in w.jobs.list():
+        if (job.settings.name or '').startswith('globalbank'):
+            try:
+                w.jobs.delete(job.job_id)
+            except NotFound:
+                pass
     try:
         w.catalogs.get(CATALOG)
     except NotFound:
-        w.catalogs.create(CATALOG)
+        # Through SQL, not the REST create: a metastore on Default Storage (the owner's second Free
+        # Edition workspace, 2026-10-27) has no storage root, and the REST call refuses without a
+        # location; serverless SQL puts the catalog on Default Storage by itself.
+        from databricks.connect import DatabricksSession
+        DatabricksSession.builder.serverless().getOrCreate().sql(f'CREATE CATALOG IF NOT EXISTS {CATALOG}')
     for schema in w.schemas.list(catalog_name=CATALOG):
         if schema.name in KEEP:
             continue
         for table in w.tables.list(catalog_name=CATALOG, schema_name=schema.name):
-            w.tables.delete(table.full_name)
+            try:
+                w.tables.delete(table.full_name)
+            except NotFound:  # a deleted pipeline's tables go with it
+                pass
+        for function in w.functions.list(catalog_name=CATALOG, schema_name=schema.name):
+            w.functions.delete(function.full_name)
         for volume in w.volumes.list(catalog_name=CATALOG, schema_name=schema.name):
             empty(w, f'/Volumes/{CATALOG}/{schema.name}/{volume.name}')
 
