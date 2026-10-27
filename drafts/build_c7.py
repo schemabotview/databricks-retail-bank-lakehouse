@@ -321,9 +321,12 @@ for f in spark.sql("""
         SELECT origin.flow_name AS flow,
                max_by(details:flow_progress.status, timestamp) FILTER (
                    WHERE details:flow_progress.status IS NOT NULL) AS status,
-               timestampdiff(SECOND, min(timestamp), max(timestamp)) AS secs
+               coalesce(timestampdiff(SECOND,
+                   min(timestamp) FILTER (WHERE details:flow_progress.status
+                                          = 'RUNNING'),
+                   max(timestamp)), 0) AS secs
         FROM last_update WHERE event_type = 'flow_progress'
-        GROUP BY ALL ORDER BY flow""").collect():
+        GROUP BY ALL HAVING status IS NOT NULL ORDER BY flow""").collect():
     flow = f.flow.replace('globalbank_dev.', '')
     print(f'  {flow:<38}{f.status:<11}{f.secs:>4}s')
 '''
@@ -354,7 +357,7 @@ step(P, '02-streaming-tables', f'{P}/01-why-declare', ['globalbank/deploy.py', '
      [DEP, RUN1, 'bash land.sh 2026-10-02 | wc -l', RUN1], PIPE + LAND1)
 step(P, '03-materialized-views', f'{P}/02-streaming-tables', ['pipelines/silver.py', 'pipelines/gold.py'],
      {'pipelines/silver.py': SILVER_MV, 'pipelines/gold.py': GOLD},
-     [DEP, RUN1, 'bash land.sh 2026-10-02 > /dev/null', RUN1], PIPE + LAND1)
+     [DEP, RUN1 + ' | tail -2', 'bash land.sh 2026-10-02 > /dev/null', RUN1 + ' | tail -2'], PIPE + LAND1)
 step(P, '04-graph', f'{P}/03-materialized-views', ['globalbank/graph.py'], {'globalbank/graph.py': GRAPH},
      ['python -m globalbank.graph'], PIPE + LAND1 + [q(DEP), q(RUN1)])
 step(P, '05-expectations', f'{P}/04-graph', ['pipelines/silver.py', 'globalbank/quality.py'],
@@ -369,6 +372,6 @@ step(P, '07-auto-cdc', f'{P}/06-quarantine', ['pipelines/silver.py'],
 step(P, '08-event-log', f'{P}/07-auto-cdc', ['globalbank/events.py'], {'globalbank/events.py': EVENTS},
      ['python -m globalbank.events'], PIPE + LAND_ALL + [q(DEP), q(RUN1)], extra={'volatile': ['digits']})
 step(P, '09-full-refresh', f'{P}/08-event-log', ['globalbank/counts.py'], {'globalbank/counts.py': COUNTS},
-     ['python -m globalbank.counts', RUN1 + ' --full-refresh | head -1', 'python -m globalbank.counts'],
+     ['python -m globalbank.counts', RUN1 + ' --full-refresh | sed -n 1p', 'python -m globalbank.counts'],
      PIPE + LAND_ALL + [q(DEP), q(RUN1)])
 print('built')

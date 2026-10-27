@@ -263,7 +263,7 @@ if __name__ == '__main__':
     step(P, '02-run', f'{P}/01-nightly', ['globalbank/job.py'], {'globalbank/job.py': JOB + JOB_WAIT},
          [f'{J} run'], BASE + [q(f'{J} deploy')], extra={'volatile': ['digits']})
     step(P, '03-file-arrival', f'{P}/02-run', ['resources/nightly.yml'], {'resources/nightly.yml': nightly(trigger=True)},
-         [f'{J} deploy | head -1', 'sleep 90', 'bash land.sh 2026-11-01 settlements | wc -l', f'{J} wait'],
+         [f'{J} deploy | sed -n 1p', 'sleep 90', 'bash land.sh 2026-11-01 settlements | wc -l', f'{J} wait'],
          BASE)
     step(P, '04-repair', f'{P}/03-file-arrival', ['globalbank/job.py'], {'globalbank/job.py': JOB + JOB_WAIT + JOB_REPAIR},
          [f'{J} run', 'bash land.sh 2026-10-31 settlements | wc -l', f'{J} repair'],
@@ -271,16 +271,16 @@ if __name__ == '__main__':
     step(P, '05-idempotency', f'{P}/04-repair', ['resources/nightly.yml', 'sql/gold/month_end.sql', 'sql/gold/month_end_rows.sql'],
          {'resources/nightly.yml': nightly(trigger=True, month_end=True), 'sql/gold/month_end.sql': MONTH_END,
           'sql/gold/month_end_rows.sql': COUNT_SQL},
-         [f'{J} run | head -1', f'{J} run | head -1', 'python -m globalbank.warehouse sql/gold/month_end_rows.sql'],
+         [f'{J} run | sed -n 1p', f'{J} run | sed -n 1p', 'python -m globalbank.warehouse sql/gold/month_end_rows.sql'],
          BASE + [q(f'{J} deploy')])
     step(P, '06-parameters', f'{P}/05-idempotency', ['resources/nightly.yml', 'sql/gold/month_end.sql', 'globalbank/job.py'],
          {'resources/nightly.yml': nightly(trigger=True, month_end=True, params=True), 'sql/gold/month_end.sql': MONTH_END_FIXED,
           'globalbank/job.py': JOB + JOB_WAIT + JOB_REPAIR + JOB_OUTPUT},
-         [f'{J} run run_date=2026-10-31 | head -1', f'{J} run run_date=2026-10-31 | head -1', f'{J} output check',
+         [f'{J} run run_date=2026-10-31 | sed -n 1p', f'{J} run run_date=2026-10-31 | sed -n 1p', f'{J} output check',
           'python -m globalbank.warehouse sql/gold/month_end_rows.sql'],
          BASE + [q(f'{J} deploy')])
     step(P, '07-run-as', f'{P}/06-parameters', ['resources/nightly.yml', 'globalbank/job.py'],
          {'resources/nightly.yml': nightly(trigger=True, month_end=True, params=True, owner=True),
           'globalbank/job.py': JOB + JOB_WAIT + JOB_REPAIR + JOB_OUTPUT + JOB_WHO},
-         [f'{J} deploy | head -1', f'{J} who'], BASE)
+         [f'{J} deploy | sed -n 1p', f'{J} who'], BASE)
     print('built')

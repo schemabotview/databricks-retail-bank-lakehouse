@@ -396,7 +396,7 @@ step(P, '03-statements', f'{P}/02-daily-balances', ['sql/gold/monthly_statements
      [f'{WH} sql/gold/monthly_statements.sql', f'{WH} sql/gold/statement_of.sql account=A0000011'], BUILT)
 step(P, '04-as-of', f'{P}/03-statements', ['sql/gold/regulatory_snapshot.sql', 'globalbank/asof.py'],
      {'sql/gold/regulatory_snapshot.sql': SNAPSHOT, 'globalbank/asof.py': ASOF},
-     ['bash land.sh 2026-11-01 settlements 2026-11-03 | wc -l', 'python -m globalbank.run | head -1',
+     ['bash land.sh 2026-11-01 settlements 2026-11-03 | wc -l', 'python -m globalbank.run | sed -n 1p',
       q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'python -m globalbank.asof'],
      BUILT + [q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'sleep 5'],
      extra={'mask': [r'written \d{4}-\d{2}-\d{2} \d{2}:\d{2}']})

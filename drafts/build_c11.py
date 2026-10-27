@@ -206,7 +206,7 @@ if __name__ == '__main__':
     step(P, '03-resources', f'{P}/02-bundle', ['resources/dashboard.yml'], {'resources/dashboard.yml': DASHBOARD_YML},
          [f'{B} summary'], [RESET])
     step(P, '04-targets', f'{P}/03-resources', ['databricks.yml'], {'databricks.yml': BUNDLE.replace('#PROD#', PROD)},
-         [f'{B} validate -t dev | head -5', f'{B} validate -t prod | head -5'], [RESET])
+         [f'{B} validate -t dev | sed -n 1,5p', f'{B} validate -t prod | sed -n 1,5p'], [RESET])
     step(P, '05-deploy-run', f'{P}/04-targets', ['globalbank/drift.py'], {'globalbank/drift.py': None},
          [f'{B} deploy', f'{B} run globalbank_nightly | tail -1'], LAND,
          extra={'volatile': ['ts'], 'mask': [r'Files: \d+ uploaded']})
