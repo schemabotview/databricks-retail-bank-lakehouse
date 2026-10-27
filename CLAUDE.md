@@ -40,7 +40,7 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | 1 | `intro` | 4 | authored, replayed (lab), rendered, looked at; no audio |
 | 2 | `start` | 6 | pilot: authored, replayed on the workspace, rendered, looked at; no audio |
 | 3 | `land` | 8 | authored, replayed on the workspace, rendered, looked at; no audio |
-| 4 | `ledger` | 8 | not started |
+| 4 | `ledger` | 8 | blocked: steps drafted (`drafts/build_c4.py`), not replayed — volume quota |
 | 5 | `customers` | 7 | not started |
 | 6 | `protect` | 8 | not started |
 | 7 | `pipeline` | 9 | not started |
@@ -49,6 +49,21 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | 10 | `schedule` | 7 | not started |
 | 11 | `ship` | 7 | not started |
 | 12 | `operate` | 6 | not started |
+
+## Workspace quotas (learned 2026-10-27)
+
+Free Edition's metastore allows **50 volumes** and **500 tables**, and Unity Catalog keeps a dropped
+managed volume (and table) for 7 days, **counting it against the quota all that time**. Course 2/3's
+first replays reset with `databricks catalogs delete globalbank_dev --force` before every step; a
+few dozen replays dropped ~40 volumes, the quota read 50/50 with 9 live, and every volume create was
+refused (`QUOTA_EXCEEDED.UC_RESOURCE_QUOTA_EXCEEDED`) until those drops age out (~2026-11-03 to 05).
+So:
+
+- **A replay never drops the catalog, a schema or a volume.** `scripts/ws_reset.py` (every
+  workspace step's first setup command) drops only tables and EMPTIES volumes.
+- Tables still count when dropped: replay a course when it changed, not on every check.
+- Check before a long replay: `databricks` SDK `resource_quotas.get_quota('metastore', <id>,
+  'volume-quota')`; the count refreshes only on creates.
 
 ## The toolchain
 

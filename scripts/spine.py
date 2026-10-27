@@ -89,6 +89,7 @@ SHOWN_HOST = 'https://globalbank.cloud.databricks.com'
 SHOWN_USER = 'ana@globalbank.example'
 SHOWN_WORKSPACE_ID = '1234567890123456'
 SHOWN_ACCOUNT_ID = '00000000-0000-4000-8000-000000000000'
+SHOWN_METASTORE_ID = '11111111-1111-4111-8111-111111111111'
 SHOWN_NAME = 'Ana'
 WORKSPACE_VARS = ('DATABRICKS_HOST', 'DATABRICKS_TOKEN')
 TS = re.compile(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?')
@@ -162,6 +163,8 @@ def environment(home: Path, workspace: bool = False) -> dict:
         (shim / 'python').symlink_to(shutil.which('python3.12') or '/usr/local/bin/python3.12')
     return {**env, 'HOME': str(home), 'NO_COLOR': '1', 'PYTHON_COLORS': '0', 'TERM': 'dumb', 'PS1': '',
             'PATH': f"{shim}:{env['PATH']}", 'PIP_DISABLE_PIP_VERSION_CHECK': '1',
+            # A setup can call the repo's own plumbing (scripts/ws_reset.py) by absolute path.
+            'SPINE_REPO': str(REPO),
             # The step's HOME would give pip an empty cache every step: keep the real one.
             'PIP_CACHE_DIR': os.environ.get('PIP_CACHE_DIR', str(Path.home() / '.cache' / 'pip'))}
 
@@ -182,6 +185,10 @@ def workspace_identity() -> list[tuple[str, str]]:
     for key, shown in (('workspace_id', SHOWN_WORKSPACE_ID), ('account_id', SHOWN_ACCOUNT_ID)):
         if config.get(key, {}).get('value'):
             pairs.append((str(config[key]['value']), shown))
+    # The metastore id appears in Unity Catalog errors (a quota refusal printed it).
+    metastore = subprocess.run(['databricks', 'metastores', 'current', '-o', 'json'], capture_output=True, text=True)
+    if metastore.returncode == 0:
+        pairs.append((json.loads(metastore.stdout)['metastore_id'], SHOWN_METASTORE_ID))
     return pairs
 
 

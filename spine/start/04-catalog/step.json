@@ -1,2 +1,2 @@
 {"from": "start/03-connect", "workspace": true, "venv": true, "changes": ["globalbank/catalog.py"],
- "setup": ["databricks catalogs delete globalbank_dev --force 2>/dev/null || true"]}
+ "setup": ["python \"$SPINE_REPO/scripts/ws_reset.py\""]}

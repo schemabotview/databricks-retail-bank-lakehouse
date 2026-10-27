@@ -1,2 +1,2 @@
 {"from": "start/04-catalog", "workspace": true, "venv": true, "changes": ["globalbank_sim/", "land.sh"],
- "setup": ["databricks catalogs delete globalbank_dev --force 2>/dev/null || true", "python -m globalbank.catalog"]}
+ "setup": ["python \"$SPINE_REPO/scripts/ws_reset.py\"", "python -m globalbank.catalog"]}
