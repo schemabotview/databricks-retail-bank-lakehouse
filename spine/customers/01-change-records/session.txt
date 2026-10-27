@@ -1,0 +1,12 @@
+$ python -m globalbank.land core_cdc
+globalbank_dev.bronze.core_cdc: 0 + 12,157 = 12,157 rows
+$ python -m globalbank.record 12155
+accounts D 23   accounts I 6,499   customers I 5,064   customers U 571
+one change, as received:
+  op U   seq 12155   table customers   ts 2026-10-09 17:31:13
+  key    {"customer_id":"C000001"}
+  after  {"customer_id":"C000001","first_name":"Chloe","last_name":"Fischer",
+         "national_id":"XN55495771H","date_of_birth":"1989-02-04",
+         "email":"chloe.fischer1@example.com","address":"136 River View",
+         "region":"West","branch_id":"B07","segment":"standard",
+         "kyc_status":"REVIEW","customer_since":"2013-08-01"}

@@ -100,11 +100,12 @@ SILVER = 'globalbank_dev.silver.card_transactions'
 
 spark = get_spark()
 version = f' VERSION AS OF {sys.argv[1]}' if len(sys.argv) > 1 else ''
-spark.sql(f"""SELECT to_date(auth_ts) AS day, count(*) AS auths,
-                     sum(amount) AS spend
-              FROM {SILVER}{version}
-              WHERE status = 'APPROVED' AND currency = 'EUR'
-              GROUP BY day ORDER BY day""").show()
+for r in spark.sql(f"""SELECT to_date(auth_ts) AS day, count(*) AS auths,
+                              sum(amount) AS spend
+                       FROM {SILVER}{version}
+                       WHERE status = 'APPROVED' AND currency = 'EUR'
+                       GROUP BY day ORDER BY day""").collect():
+    print(f'{r.day}  {r.auths:>6,} auths  {r.spend:>12,.2f} EUR')
 '''
 
 HISTORY = '''"""A table's history: one row per version, with what wrote it."""
@@ -115,13 +116,14 @@ from pyspark.sql import functions as F
 from globalbank.session import get_spark
 
 spark = get_spark()
-(spark.sql(f'DESCRIBE HISTORY {sys.argv[1]}')
-    .select('version', 'operation',
-            F.coalesce(F.col('operationMetrics.numTargetRowsInserted'),
-                       F.col('operationMetrics.numOutputRows'),
-                       F.lit('')).alias('rows'))
-    .orderBy('version')
-    .show(truncate=False))
+history = (spark.sql(f'DESCRIBE HISTORY {sys.argv[1]}')
+           .select('version', 'operation',
+                   F.coalesce(F.col('operationMetrics.numTargetRowsInserted'),
+                              F.col('operationMetrics.numOutputRows'),
+                              F.lit('')).alias('rows'))
+           .orderBy('version'))
+for r in history.collect():
+    print(f'version {r.version:<3}{r.operation:<20}{r.rows:>6}')
 '''
 
 RESTORE = '''"""Put a table back to an earlier version. The restore is a version too."""
@@ -132,7 +134,9 @@ from globalbank.session import get_spark
 table, version = sys.argv[1], sys.argv[2]
 spark = get_spark()
 result = spark.sql(f'RESTORE TABLE {table} TO VERSION AS OF {version}')
-print(result.select('restored_files_size', 'num_restored_files').first())
+r = result.first()
+print(f'{table}: removed {r.num_removed_files} file(s),'
+      f' restored {r.num_restored_files}')
 '''
 
 
@@ -163,7 +167,7 @@ step('01-bad-batch', 'land/08-reconcile', ['globalbank/ledger.py', 'globalbank/d
 step('02-time-travel', 'ledger/01-bad-batch', ['globalbank/history.py'], {'globalbank/history.py': HISTORY},
      [f'python -m globalbank.history {SILVER}', 'python -m globalbank.daily 4'], POSTED + [post('2026-10-14')])
 step('03-restore', 'ledger/02-time-travel', ['globalbank/restore.py'], {'globalbank/restore.py': RESTORE},
-     [f'python -m globalbank.restore {SILVER} 4', f'python -m globalbank.history {SILVER}', 'python -m globalbank.daily'],
+     [f'python -m globalbank.restore {SILVER} 4', f'python -m globalbank.history {SILVER} | tail -2', 'python -m globalbank.daily'],
      POSTED + [post('2026-10-14')])
 
 LAND_SH = """#!/usr/bin/env bash
@@ -287,10 +291,10 @@ CLEAR = [land(d, 'settlements') for d in ['2026-10-11', '2026-10-12', '2026-10-1
 settle = lambda d: f'python -m globalbank.ledger settle {d} > /dev/null'
 
 step('04-constraints', 'ledger/03-restore', ['globalbank/ledger.py'], {'globalbank/ledger.py': ledger(constraint=True)},
-     ['python -m globalbank.ledger post 2026-10-14', f'python -m globalbank.history {SILVER}'],
-     POSTED + [post('2026-10-14'), f'python -m globalbank.restore {SILVER} 4 > /dev/null'])
+     ['python -m globalbank.ledger post 2026-10-14', f'python -m globalbank.history {SILVER} | tail -3'],
+     POSTED)
 step('05-two-writers', 'ledger/04-constraints', ['globalbank/writers.py'], {'globalbank/writers.py': WRITERS},
-     ['python -m globalbank.writers 2026-10-15 2026-10-16', f'python -m globalbank.history {SILVER}'],
+     ['python -m globalbank.writers 2026-10-15 2026-10-16', f'python -m globalbank.history {SILVER} | tail -3'],
      LANDED_ALL + [post(d) for d in DAYS])
 step('06-settle', 'ledger/05-two-writers', ['globalbank/ledger.py', 'globalbank/land.py', 'globalbank/catalog.py', 'land.sh', 'globalbank/statuses.py'],
      {'globalbank/ledger.py': ledger(constraint=True, settle=True), 'globalbank/land.py': LAND_PY, 'globalbank/catalog.py': CATALOG6,

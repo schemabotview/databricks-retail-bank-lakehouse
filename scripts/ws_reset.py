@@ -11,10 +11,10 @@ catalog used all of it (2026-10-27: 9 live volumes, a quota count of 50), and no
 created for a week. Dropped TABLES count against the table quota (500) the same way, so a replay
 drops only the tables, and volumes are emptied, never dropped.
 
-What it does: delete the course's own pipelines and jobs (named `globalbank…`, Courses 7 on: a
-pipeline owns its tables, and Free Edition allows one pipeline per type); create the catalog if
-missing; drop every table, view and function in the catalog's own schemas; delete every file and
-folder inside every volume, keeping the volume.
+What it does: delete the course's own pipelines, jobs, dashboards and alerts (`globalbank` in the name,
+Courses 7 on: a pipeline owns its tables, and Free Edition allows one pipeline per type); create
+the catalog if missing; drop every table, view, function and registered model in the catalog's own
+schemas; delete every file and folder inside every volume, keeping the volume.
 """
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.errors import NotFound
@@ -40,17 +40,28 @@ def empty(w: WorkspaceClient, path: str) -> None:
 def main() -> None:
     w = WorkspaceClient()
     for pipeline in w.pipelines.list_pipelines():
-        if (pipeline.name or '').startswith('globalbank'):
+        if 'globalbank' in (pipeline.name or ''):
             try:
                 w.pipelines.delete(pipeline.pipeline_id)
             except NotFound:  # the listing can still name one deleted a moment ago
                 pass
     for job in w.jobs.list():
-        if (job.settings.name or '').startswith('globalbank'):
+        if 'globalbank' in (job.settings.name or ''):
             try:
                 w.jobs.delete(job.job_id)
             except NotFound:
                 pass
+    for dashboard in w.lakeview.list():
+        if 'globalbank' in (dashboard.display_name or ''):
+            w.lakeview.trash(dashboard.dashboard_id)
+    for alert in w.alerts_v2.list_alerts():
+        if 'globalbank' in (alert.display_name or ''):
+            w.alerts_v2.trash_alert(alert.id)
+    bundle = f'/Workspace/Users/{w.current_user.me().user_name}/.bundle/globalbank'
+    try:  # a bundle's deployment state (Course 11): its resources are gone above
+        w.workspace.delete(bundle, recursive=True)
+    except NotFound:
+        pass
     try:
         w.catalogs.get(CATALOG)
     except NotFound:
@@ -69,6 +80,8 @@ def main() -> None:
                 pass
         for function in w.functions.list(catalog_name=CATALOG, schema_name=schema.name):
             w.functions.delete(function.full_name)
+        for model in w.registered_models.list(catalog_name=CATALOG, schema_name=schema.name):
+            w.registered_models.delete(model.full_name)  # Course 9's, with its versions
         for volume in w.volumes.list(catalog_name=CATALOG, schema_name=schema.name):
             empty(w, f'/Volumes/{CATALOG}/{schema.name}/{volume.name}')
 

@@ -1,0 +1,12 @@
+$ python -m globalbank.pit
+16,709 payments; 170 with another KYC status then
++---------------+-------------------+-----------+--------+-------+
+|auth_id        |auth_ts            |customer_id|kyc_then|kyc_now|
++---------------+-------------------+-----------+--------+-------+
+|au-5a80737e4edb|2026-09-28 04:35:09|C002555    |VERIFIED|PENDING|
+|au-859504e0afb3|2026-09-28 06:26:09|C002650    |VERIFIED|REVIEW |
+|au-07036445e05d|2026-09-28 06:57:59|C000114    |VERIFIED|PENDING|
+|au-824c3e359aa4|2026-09-28 07:11:24|C002990    |VERIFIED|PENDING|
+|au-2efc11b6acf0|2026-09-28 07:46:51|C004394    |VERIFIED|PENDING|
++---------------+-------------------+-----------+--------+-------+
+only showing top 5 rows

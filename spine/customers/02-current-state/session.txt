@@ -1,0 +1,6 @@
+$ python -m globalbank.cdc customers '2026-09-'
+customers <- 2026-09-: 5,044 changes
+  inserted 5044, updated 0, deleted 0; silver.customers: 5,044 rows
+$ python -m globalbank.cdc customers '2026-10-0[1-8]'
+customers <- 2026-10-0[1-8]: 125 changes
+  inserted 17, updated 108, deleted 0; silver.customers: 5,061 rows

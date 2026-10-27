@@ -6,8 +6,9 @@ SILVER = 'globalbank_dev.silver.card_transactions'
 spark = get_spark()
 last = spark.sql(f'DESCRIBE HISTORY {SILVER} LIMIT 1').first().version
 changes = spark.sql(f"SELECT * FROM table_changes('{SILVER}', {last})")
-changes.groupBy('_change_type').count().orderBy('_change_type').show()
-(changes.where("_change_type LIKE 'update%'")
-    .select('auth_id', '_change_type', 'status', 'settled_eur')
-    .orderBy('auth_id', '_change_type')
-    .show(4))
+counts = changes.groupBy('_change_type').count().orderBy('_change_type')
+print(f'version {last}:',
+      ', '.join(f'{r[0]} {r[1]:,}' for r in counts.collect()))
+for r in (changes.where("_change_type LIKE 'update%'")
+          .orderBy('auth_id', '_change_type').limit(4).collect()):
+    print(f'  {r.auth_id}  {r._change_type:<18}{r.status:<10}{r.settled_eur}')

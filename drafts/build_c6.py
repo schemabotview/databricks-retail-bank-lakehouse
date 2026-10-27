@@ -20,7 +20,7 @@ catalog_py = read(f'{PARENT}/project/globalbank/catalog.py').replace(
     "LAYERS = ['landing', 'bronze', 'silver', 'gold', 'governance', 'vault']")
 assert 'governance' in catalog_py
 
-UC = '''"""Unity Catalog's names, from the top: catalog, schemas, and what each holds."""
+UC = '''"""Unity Catalog's names, from the top: catalog, schemas, what each holds."""
 from globalbank.session import get_spark
 
 spark = get_spark()
@@ -31,19 +31,21 @@ print('owner:    ', spark.sql("""SELECT catalog_owner
     FROM system.information_schema.catalogs
     WHERE catalog_name = 'globalbank_dev'""").first()[0])
 objects = spark.sql("""
-    SELECT table_schema AS schema, count(*) AS n FROM globalbank_dev.information_schema.tables
+    SELECT table_schema AS schema, count(*) AS n
+    FROM globalbank_dev.information_schema.tables
     WHERE table_schema NOT IN ('information_schema') GROUP BY ALL""").collect()
 volumes = spark.sql("""
-    SELECT volume_schema AS schema, count(*) AS n FROM globalbank_dev.information_schema.volumes
-    GROUP BY ALL""").collect()
+    SELECT volume_schema AS schema, count(*) AS n
+    FROM globalbank_dev.information_schema.volumes GROUP BY ALL""").collect()
 tables = {r.schema: r.n for r in objects}
 vols = {r.schema: r.n for r in volumes}
 print('globalbank_dev:')
 for schema in ['landing', 'bronze', 'silver', 'gold', 'governance', 'vault']:
-    print(f'  {schema:<11} {tables.get(schema, 0)} tables, {vols.get(schema, 0)} volumes')
+    print(f'  {schema:<11} {tables.get(schema, 0)} tables,'
+          f' {vols.get(schema, 0)} volumes')
 '''
 
-GOVERN = '''"""Apply a governance file: each SQL statement in turn, and what the workspace said."""
+GOVERN = '''"""Apply a governance file: each statement, and what the workspace said."""
 import re
 import sys
 
@@ -100,7 +102,8 @@ ALTER TABLE globalbank_dev.silver.accounts
 """
 
 FILTERS = """-- A branch manager sees their region's customers; risk sees every region.
-CREATE OR REPLACE FUNCTION globalbank_dev.governance.my_region(row_region STRING)
+CREATE OR REPLACE FUNCTION globalbank_dev.governance.my_region(
+  row_region STRING)
 RETURNS BOOLEAN
 RETURN EXISTS(SELECT 1 FROM globalbank_dev.governance.roles r
               WHERE r.user_name = current_user()
@@ -186,9 +189,8 @@ from globalbank.session import get_spark
 spark = get_spark()
 edges = spark.sql("""
     SELECT DISTINCT
-           coalesce(source_table_full_name, 'files in ' ||
-                    regexp_extract(source_path, '/Volumes/[^/]+/([^/]+/[^/]+)', 1))
-             AS source,
+           coalesce(source_table_full_name, 'files in ' || regexp_extract(
+               source_path, '/Volumes/[^/]+/([^/]+/[^/]+)', 1)) AS source,
            target_table_full_name AS target
     FROM system.access.table_lineage
     WHERE target_table_catalog = 'globalbank_dev'

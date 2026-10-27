@@ -1,0 +1,13 @@
+$ python -m globalbank.cdc customers '2026-10-09/changes-1200'
+customers <- 2026-10-09/changes-1200: 12 changes
+  inserted 2, updated 10, deleted 0; silver.customers: 5,063 rows
+$ python -m globalbank.cdc customers '2026-10-09/changes-2359'
+customers <- 2026-10-09/changes-2359: 13 changes
+  inserted 1, updated 12, deleted 0; silver.customers: 5,064 rows
+$ python -m globalbank.customer C000001
+C000001, in the order the changes arrived:
+  2026-09-01/changes-1200  seq     1  I  42 Market Square
+  2026-09-06/changes-2359  seq 11524  U  42 Market Square
+  2026-10-09/changes-1200  seq 12155  U  136 River View
+  2026-10-09/changes-2359  seq 12148  U  6 River View
+silver now: seq 12148, 6 River View

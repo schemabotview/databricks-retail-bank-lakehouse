@@ -1,0 +1,11 @@
+$ python -m globalbank.cdc accounts '2026-09-'
+accounts <- 2026-09-: 6,474 changes
+  inserted 6454, updated 0, deleted 0; silver.accounts: 6,454 rows
+$ python -m globalbank.cdc accounts '2026-10-0'
+accounts <- 2026-10-0: 28 changes
+  inserted 25, updated 0, deleted 3; silver.accounts: 6,476 rows
+$ python -m globalbank.closed
+23 D records in bronze; 0 of their accounts in silver
+  A0028492  seq 11443  2026-09-02/changes-2359.json  in silver: no
+  A0022762  seq 11456  2026-09-03/changes-1200.json  in silver: no
+  A0029172  seq 11457  2026-09-03/changes-2359.json  in silver: no

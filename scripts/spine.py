@@ -177,6 +177,9 @@ def workspace_identity() -> list[tuple[str, str]]:
     req = urllib.request.Request(f'{host}/api/2.0/preview/scim/v2/Me', headers={'Authorization': f"Bearer {os.environ['DATABRICKS_TOKEN']}"})
     me = json.load(urllib.request.urlopen(req, timeout=30))
     pairs = [(host, SHOWN_HOST), (host.removeprefix('https://'), SHOWN_HOST.removeprefix('https://')), (me['userName'], SHOWN_USER)]
+    # A bundle in development mode prefixes names with the user's SHORT name: the email's local part
+    # with every non-word character as `_` ("[dev jane_doe] globalbank_nightly").
+    pairs.append((re.sub(r'\W', '_', me['userName'].split('@')[0]), SHOWN_USER.split('@')[0]))
     if me.get('displayName') and me['displayName'] != me['userName']:
         pairs.append((me['displayName'], SHOWN_NAME))
     # The workspace and account ids are not in the host: ask the CLI, which resolves them.

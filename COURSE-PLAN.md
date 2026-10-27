@@ -1,6 +1,6 @@
 # Learn Databricks by building a retail bank lakehouse: full course, beginner to professional — plan
 
-**Status: v1 plan (2026-10-26). Courses 1–2 authored; the owner's Free Edition workspace is connected (2026-10-27).**
+**Status: v1 plan (2026-10-26). Courses 1–3 authored; the owner moved to a second Free Edition workspace (2026-10-27) and Courses 2–3 replayed on it unchanged. Courses 4–12 being authored on it; every change of plan below is dated.**
 
 ## The idea
 
@@ -258,19 +258,30 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 7 | Deletion vectors | a reversal marks rows instead of rewriting files | a data file + its deletion vector |
 | 8 | Change data feed | `table_changes` for whoever reads next | change rows with `_change_type` |
 
-**5. `customers` · Customers and accounts from the core system · 7** — bronze → silver
+**5. `customers` · Customers and accounts from the core system · 8** — bronze → silver
+
+(2026-10-27: the out-of-order failure and its fix are two sections, as every failure is its own
+step. The records carry `after` only, no `before`: the generator's CDC tool sends the row after.)
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
-| 1 | What the core system sends | CDC records: `op`, `seq`, before / after | one change record taken apart |
-| 2 | Current state with `MERGE` | SCD type 1 customers | records → current table |
-| 3 | Out of order | seq 7 before 6: a naive `MERGE` brings back an old address | two orderings, two results |
-| 4 | Deletes | an account closes (`D`) | the row goes; the feed keeps it |
-| 5 | History: SCD type 2 | address and KYC status with `valid_from` / `valid_to` | one customer's timeline |
-| 6 | A point-in-time join | a September payment joined to the KYC status *then*, not now | two joins, two answers |
-| 7 | Managed connectors | Lakeflow Connect from the core database (documented if Free Edition lacks it) | CDC tool → files vs connector → table |
+| 1 | What the core system sends | CDC records: `op`, `seq`, `key`, `after` (kept as JSON text in bronze) | one change record taken apart |
+| 2 | Current state with `MERGE` | SCD type 1 customers, a batch of change files at a time | records → current table |
+| 3 | Out of order | seq 12155 arrives before 12148: the naive `MERGE` brings back an old address | two orderings, two results |
+| 4 | Apply changes in sequence | `WHEN MATCHED AND s.seq > t.seq`: the same files, the right address | the older change, skipped |
+| 5 | Deletes | accounts; an account closes (`D`) | the row goes; bronze keeps the record |
+| 6 | History: SCD type 2 | address and KYC status with `valid_from` / `valid_to` | one customer's timeline |
+| 7 | A point-in-time join | a late-September payment joined to the KYC status *then*, not now | two joins, two answers |
+| 8 | Managed connectors | Lakeflow Connect from the core database: **documented** (no core database to reach on Free Edition) | CDC tool → files vs connector → table |
 
 **6. `protect` · Protect customers' data · 8** — governance by layer
+
+(2026-10-27: Free Edition has no account groups, and a workspace group is not a Unity Catalog
+principal (`PRINCIPAL_DOES_NOT_EXIST`, checked). So 6.2 runs the grants by layer as code and shows
+them refused, with the access matrix **documented**; masks and row filters read a role-mapping table,
+`governance.roles` (who reads as which role: the documented mapping-table pattern), and one user
+switching their row shows two readers. Identities on the owner's workspace are never changed.
+A `governance` schema holds the roles table and the functions.)
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -299,17 +310,32 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 
 **8. `serve` · Serve the business · 7** — silver → gold
 
+(2026-10-27: gold is built by `sql/gold/*.sql` run on the SQL warehouse from the laptop (the SDK's
+statement execution API), as plain Delta tables, so their versions answer 8.4. The pipeline gains
+bronze `settlements` and `postings` and silver `accounts` (`AUTO CDC`), `settlements`, `postings`.
+Statements list what cleared (the scheme's `amount_eur`), as a real statement does, so the FX
+file is not needed and not landed. The dashboard is published through the Lakeview API and drawn
+from its datasets' results; the alert is created through the alerts API (its schedule and
+notification are the workspace's; the frame shows its query's real result).)
+
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
 | 1 | A SQL warehouse | the 2X-Small warehouse, queried from the laptop | client → warehouse → tables |
-| 2 | Daily balances | a running balance per account; FX conversion | plot: one account's October balance |
+| 2 | Daily balances | a running balance per account: opening + postings − cleared card payments | plot: one account's October balance |
 | 3 | The monthly statement | October statement per account | the statement, as a table |
-| 4 | The regulator's question | "as reported on 31 October": `TIMESTAMP AS OF`, after late settlements | one date, two answers |
+| 4 | The regulator's question | the report for 29–31 October, written on 31 October, then late clearing files (1–3 November) land: `TIMESTAMP AS OF` the first write | one date, two answers |
 | 5 | A dashboard | `statements.lvdash.json`, drawn from its datasets' results | plot: spend by category, by region |
 | 6 | Alerts | overdrafts above a threshold → notify | rule → condition → notification |
 | 7 | Why a query is slow | query history: files read, bytes pruned | plot: files read per query |
 
 **9. `detect` · Catch card fraud · 8** — silver → `ml` → gold
+
+(2026-10-27: labels exist only for September's rings (the chargebacks), so the rule is checked on
+12 and 26 September, the model trains on 12 September, is tested on 26 September, and scores the
+unlabelled 22 October ring. Python UDFs over Databricks Connect fail on this workspace
+(`ISOLATION_STARTUP_FAILURE.SANDBOX_STARTUP`), so 9.7 scores each new day on the laptop with the
+registered `@champion`, rather than inside a Spark stream; tracking and the registry are the
+workspace's.)
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -319,22 +345,33 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 4 | Features in Unity Catalog | velocity, merchant novelty, amount z-score | feature table rows |
 | 5 | MLflow tracking | a logistic regression on labelled September | run → params, metrics, model |
 | 6 | A model in Unity Catalog | `globalbank_dev.ml.card_fraud@champion` | versions and the alias |
-| 7 | Score the stream | the registered model inside the stream | stream → features → model → flags |
+| 7 | Score each day | the registered `@champion`, loaded from Unity Catalog, scores 22 October | features → model → flags |
 | 8 | Precision, recall, money | two thresholds: analysts' queue vs fraud caught | plot: the trade-off |
 
 **10. `schedule` · Run it every night · 7**
 
+(2026-10-27: the job is written as a bundle resource, `resources/nightly.yml`, deployed by
+`globalbank/job.py` until Course 11's bundle takes the same file. Tasks: the pipeline → balances →
+statements, and the fraud rule, both SQL on the warehouse → a Python check on serverless job
+compute (task values) → month-end figures. Widest point: 2 tasks. The fraud flags are the rule's;
+the model stays a laptop step (9.7). The failure in 10.4 is a missing clearing file.)
+
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
-| 1 | The nightly run | pipeline → statements → scoring → dashboard | the task graph |
+| 1 | The nightly run | pipeline → balances → statements; fraud rule; check | the task graph |
 | 2 | A job | create it, `databricks jobs run-now` | job → tasks → a run |
 | 3 | File arrival | the settlement file lands → the job starts | trigger → run |
-| 4 | Failure and repair | a bad FX file fails one task; repair re-runs it and what follows | task states before / after repair |
+| 4 | Failure and repair | the day's clearing file is missing: the check fails; it lands; repair re-runs what failed | task states before / after repair |
 | 5 | Idempotency | a re-run statement task appends twice; fix it | rows after two runs |
 | 6 | Parameters and task values | `run_date` in, a count out | values flowing between tasks |
 | 7 | Who the job runs as | `run_as`, notifications on failure | identity of each run |
 
 **11. `ship` · Ship it as code · 7**
+
+(2026-10-27: the dev target sets `presets.name_prefix: dev_`, so no name derived from the user's
+email is shown. Free Edition has one workspace and one pipeline per type: the prod target is
+validated, not deployed (a real bank's prod is another workspace). CI is **documented**: deploying
+from GitHub needs a service principal's OAuth secret, which needs the account console.)
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
@@ -357,7 +394,7 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 | 5 | The finished bank | the whole bundle | **the app map**, every part lit |
 | 6 | Where next | the ct course for breadth; Lakebase, Apps | each part of the bank → where it goes next |
 
-**12 courses, 85 sections, ~2 h 50 min.**
+**12 courses, 86 sections, ~2 h 52 min.** (Course 5 gained a section, 2026-10-27.)
 
 ## Packaging for YouTube
 

@@ -65,7 +65,7 @@ catalog_py = read(f'{PARENT}/project/globalbank/catalog.py').replace(
     "'landing.settlements', ", "'landing.settlements', 'landing.core_cdc',\n           ")
 assert 'core_cdc' in catalog_py
 
-RECORD = '''"""What the core system sends: its change records, counted, and one taken apart."""
+RECORD = '''"""What the core system sends: change records, counted, and one taken apart."""
 import sys
 
 from globalbank.session import get_spark
@@ -186,7 +186,9 @@ closed = spark.sql("""
     WHERE b.`table` = 'accounts' AND b.op = 'D'""")
 print(f'{closed.count()} D records in bronze;'
       f' {closed.where("in_silver").count()} of their accounts in silver')
-closed.orderBy('seq').show(3, truncate=False)
+for c in closed.orderBy('seq').limit(3).collect():
+    print(f"  {c.account_id}  seq {c.seq}  {c.file}"
+          f"  in silver: {'yes' if c.in_silver else 'no'}")
 '''
 
 SCD2 = '''"""Silver customers_history: every version of each customer (SCD type 2)."""
@@ -241,7 +243,8 @@ both = spark.sql("""
      AND p.auth_ts >= h.valid_from
      AND (p.auth_ts < h.valid_to OR h.valid_to IS NULL)""")
 differ = both.where('kyc_then != kyc_now')
-print(f'{both.count():,} payments; {differ.count():,} with another KYC status then')
+print(f'{both.count():,} payments;'
+      f' {differ.count():,} with another KYC status then')
 differ.orderBy('auth_ts').show(5, truncate=False)
 '''
 
@@ -254,23 +257,24 @@ TO_OCT8 = INGESTED + [apply('customers', SEPT) + ' > /dev/null', apply('customer
 OOO = [apply('customers', '2026-10-09/changes-1200'), apply('customers', '2026-10-09/changes-2359'),
        'python -m globalbank.customer C000001']
 
-step(C, '01-change-records', PARENT, ['land.sh', 'globalbank/land.py', 'globalbank/catalog.py', 'globalbank/record.py'],
-     {'land.sh': LAND_SH, 'globalbank/land.py': land_py, 'globalbank/catalog.py': catalog_py, 'globalbank/record.py': RECORD},
-     ['python -m globalbank.land core_cdc', 'python -m globalbank.record 12155'], LANDED)
-step(C, '02-current-state', f'{C}/01-change-records', ['globalbank/cdc.py'], {'globalbank/cdc.py': cdc()},
-     [apply('customers', SEPT), apply('customers', OCT8)], INGESTED)
-step(C, '03-out-of-order', f'{C}/02-current-state', ['globalbank/customer.py'], {'globalbank/customer.py': CUSTOMER},
-     OOO, TO_OCT8)
-step(C, '04-in-sequence', f'{C}/03-out-of-order', ['globalbank/cdc.py'], {'globalbank/cdc.py': cdc(guard=True)},
-     OOO, TO_OCT8)
-step(C, '05-deletes', f'{C}/04-in-sequence', ['globalbank/cdc.py', 'globalbank/closed.py'],
-     {'globalbank/cdc.py': cdc(guard=True, accounts=True), 'globalbank/closed.py': CLOSED},
-     [apply('accounts', SEPT), apply('accounts', OCT), 'python -m globalbank.closed'], INGESTED)
-step(C, '06-history', f'{C}/05-deletes', ['globalbank/scd2.py'], {'globalbank/scd2.py': SCD2},
-     ['python -m globalbank.scd2 C000001'], INGESTED)
-step(C, '07-point-in-time', f'{C}/06-history', ['globalbank/pit.py'], {'globalbank/pit.py': PIT},
-     ['python -m globalbank.pit'],
-     INGESTED + ['bash land.sh 2026-09-28 card_auths 2026-09-30 > /dev/null', 'python -m globalbank.land > /dev/null',
-                 apply('customers', '2026-') + ' > /dev/null', apply('accounts', '2026-') + ' > /dev/null',
-                 'python -m globalbank.scd2 C000001 > /dev/null'])
-print('built')
+if __name__ == '__main__':
+    step(C, '01-change-records', PARENT, ['land.sh', 'globalbank/land.py', 'globalbank/catalog.py', 'globalbank/record.py'],
+         {'land.sh': LAND_SH, 'globalbank/land.py': land_py, 'globalbank/catalog.py': catalog_py, 'globalbank/record.py': RECORD},
+         ['python -m globalbank.land core_cdc', 'python -m globalbank.record 12155'], LANDED)
+    step(C, '02-current-state', f'{C}/01-change-records', ['globalbank/cdc.py'], {'globalbank/cdc.py': cdc()},
+         [apply('customers', SEPT), apply('customers', OCT8)], INGESTED)
+    step(C, '03-out-of-order', f'{C}/02-current-state', ['globalbank/customer.py'], {'globalbank/customer.py': CUSTOMER},
+         OOO, TO_OCT8)
+    step(C, '04-in-sequence', f'{C}/03-out-of-order', ['globalbank/cdc.py'], {'globalbank/cdc.py': cdc(guard=True)},
+         OOO, TO_OCT8)
+    step(C, '05-deletes', f'{C}/04-in-sequence', ['globalbank/cdc.py', 'globalbank/closed.py'],
+         {'globalbank/cdc.py': cdc(guard=True, accounts=True), 'globalbank/closed.py': CLOSED},
+         [apply('accounts', SEPT), apply('accounts', OCT), 'python -m globalbank.closed'], INGESTED)
+    step(C, '06-history', f'{C}/05-deletes', ['globalbank/scd2.py'], {'globalbank/scd2.py': SCD2},
+         ['python -m globalbank.scd2 C000001'], INGESTED)
+    step(C, '07-point-in-time', f'{C}/06-history', ['globalbank/pit.py'], {'globalbank/pit.py': PIT},
+         ['python -m globalbank.pit'],
+         INGESTED + ['bash land.sh 2026-09-28 card_auths 2026-09-30 > /dev/null', 'python -m globalbank.land > /dev/null',
+                     apply('customers', '2026-') + ' > /dev/null', apply('accounts', '2026-') + ' > /dev/null',
+                     'python -m globalbank.scd2 C000001 > /dev/null'])
+    print('built')
