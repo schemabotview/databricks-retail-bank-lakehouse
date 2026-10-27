@@ -1,16 +1,9 @@
 $ python -m globalbank.events
 events: flow_progress 44, flow_definition 8, dataset_definition 8
-  bronze.card_auths                     COMPLETED    40s
-  bronze.core_cdc                       COMPLETED    40s
-  gold.card_spend_daily                 COMPLETED    40s
-  silver.card_transactions              COMPLETED    40s
-  silver.card_transactions_quarantine   COMPLETED    40s
-  silver.customers                      COMPLETED    40s
-  silver.customers_history              COMPLETED    40s
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/ana/globalbank/globalbank/events.py", line 25, in <module>
-    print(f'  {flow:<38}{f.status:<11}{f.secs:>4}s')
-                        ^^^^^^^^^^^^^^
-TypeError: unsupported format string passed to NoneType.__format__
+  bronze.card_auths                     COMPLETED    35s
+  bronze.core_cdc                       COMPLETED    33s
+  gold.card_spend_daily                 COMPLETED     7s
+  silver.card_transactions              COMPLETED    15s
+  silver.card_transactions_quarantine   COMPLETED    16s
+  silver.customers                      COMPLETED    20s
+  silver.customers_history              COMPLETED    19s

@@ -130,7 +130,8 @@ const mv3: SceneModel = ideFrame({
 
 // §4 — the graph: dependencies inferred from reads, drawn from the event log.
 const edges4 = all(outputOf(s4, 'python -m globalbank.graph'), /^(\S+)\s+-> (\S+)$/gm).map((m) => ({ from: m[1], to: m[2] }))
-const nodes4 = [...new Set(edges4.flatMap((e) => [e.from, e.to]))]
+const rank = (n: string) => ['bronze', 'silver', 'gold'].indexOf(n.split('.')[0])
+const nodes4 = [...new Set(edges4.flatMap((e) => [e.from, e.to]))].sort((a, b) => rank(a) - rank(b))
 const graph4Scene: SceneModel = ideFrame({
   tree: tree([...PIPES, 'globalbank/graph.py', 'globalbank/run.py'], 'globalbank/graph.py', ['globalbank/graph.py']),
   editor: { file: 'globalbank/graph.py', code: graph4, highlight: linesFrom(graph4, "SELECT details:flow_definition.output_dataset", "WHERE event_type = 'flow_definition'") },
@@ -139,6 +140,10 @@ const graph4Scene: SceneModel = ideFrame({
     {
       type: 'group', id: 'graph', title: 'globalbank_pipeline, as declared', icon: 'workflow', tone: 'store', ...FILL, children:
         nodes4.map((n) => ({ type: 'item' as const, id: nid(n), title: n, sub: n.startsWith('bronze') ? 'streaming table' : 'materialized view', icon: n.startsWith('bronze') ? 'stream' : 'table', tone: layerTone(n) })),
+    },
+    {
+      type: 'table', id: 'edges', title: 'flow_definition events: inputs → output', tone: 'store', columns: ['reads', 'defines'],
+      rows: edges4.map((e, i) => ({ id: `e-${i}`, cells: [e.from, e.to] })),
     },
     { type: 'note', id: 'note', tone: 'store', text: 'Nobody wrote this order down: the pipeline read each query, saw which tables it reads, and ran them in that order.' },
   ],
@@ -164,6 +169,17 @@ const expect5: SceneModel = ideFrame({
         { id: 'p-fail', cells: ['@dp.expect_or_fail', '—', 'stops'] },
       ],
     },
+    {
+      type: 'group', id: 'flow', title: 'Every row, every update', icon: 'filter', tone: 'store', ...FILL, children: [
+        { type: 'item', id: 'e-row', title: 'a bronze row', sub: 'as received', icon: 'layers' },
+        { type: 'item', id: 'e-check', title: 'the expectations', sub: 'counted in the event log', icon: 'filter' },
+        { type: 'item', id: 'e-silver', title: 'silver, or left out', sub: 'warn keeps it; drop leaves it out', icon: 'check' },
+      ],
+    },
+  ],
+  edges: [
+    { from: 'e-row', to: 'e-check' },
+    { from: 'e-check', to: 'e-silver' },
   ],
 })
 
@@ -176,19 +192,24 @@ const quarantine6: SceneModel = ideFrame({
   session: s6,
   side: [
     {
-      type: 'group', id: 'split', title: 'Every bronze row goes one of three ways', icon: 'filter', tone: 'store', ...FILL, children: [
+      type: 'group', id: 'split', title: 'From one RULES dictionary, two views', icon: 'filter', tone: 'store', ...FILL, children: [
         { type: 'item', id: 'x-bronze', title: `bronze: ${fmt(recon6.bronze)} rows`, sub: 'as received', icon: 'layers' },
-        { type: 'item', id: 'x-silver', title: `silver: ${fmt(recon6.silver)}`, sub: 'one per auth_id, every rule passed', icon: 'check' },
-        { type: 'item', id: 'x-q', title: `quarantine: ${fmt(recon6.quarantine)}`, sub: 'a rule failed: kept with its reason', icon: 'shield' },
-        { type: 'item', id: 'x-dup', title: `resends: ${fmt(recon6.resends)}`, sub: 'the same auth_id again: once is enough', icon: 'file' },
+        { type: 'item', id: 'x-rules', title: 'RULES', sub: 'silver keeps what passes; quarantine, what fails', icon: 'filter' },
+        { type: 'item', id: 'x-both', title: 'two materialized views', sub: 'they can never disagree', icon: 'check' },
+      ],
+    },
+    {
+      type: 'table', id: 'ways', title: 'Every bronze row goes one of three ways', tone: 'store', columns: ['to', 'rows', 'why'], rows: [
+        { id: 'w-silver', cells: ['silver', fmt(recon6.silver), 'one per auth_id, every rule passed'], tone: 'store' },
+        { id: 'w-q', cells: ['quarantine', fmt(recon6.quarantine), 'a rule failed: kept, with the original'], tone: 'consume' },
+        { id: 'w-dup', cells: ['resends', fmt(recon6.resends), 'the same auth_id again'] },
       ],
     },
     { type: 'note', id: 'note', tone: 'store', text: `${eq6}: the reconciliation from Course 3, one layer up.` },
   ],
   edges: [
-    { from: 'x-bronze', to: 'x-silver' },
-    { from: 'x-bronze', to: 'x-q' },
-    { from: 'x-bronze', to: 'x-dup' },
+    { from: 'x-bronze', to: 'x-rules' },
+    { from: 'x-rules', to: 'x-both' },
   ],
 })
 
@@ -213,6 +234,17 @@ const autoCdc7: SceneModel = ideFrame({
       type: 'table', id: 'rows', title: `C000001 now: seq ${now7[1]}, ${now7[2]}`, tone: 'ingest', columns: ['table', 'rows'],
       rows: r7[0].filter((d) => d.name.startsWith('silver.customers')).map((d) => ({ id: `t-${d.name}`, cells: [d.name, fmt(d.rows)] })),
     },
+    {
+      type: 'group', id: 'flow', title: 'Declared, not written', icon: 'workflow', tone: 'store', ...FILL, children: [
+        { type: 'item', id: 'c-bronze', title: 'bronze.core_cdc, as a stream', sub: 'every change record', icon: 'stream' },
+        { type: 'item', id: 'c-view', title: 'customer_changes', sub: 'a temporary view: after, typed', icon: 'code' },
+        { type: 'item', id: 'c-flow', title: 'two AUTO CDC flows', sub: 'customers (type 1), history (type 2)', icon: 'layers' },
+      ],
+    },
+  ],
+  edges: [
+    { from: 'c-bronze', to: 'c-view' },
+    { from: 'c-view', to: 'c-flow', label: 'sequence_by seq' },
   ],
 })
 
@@ -226,8 +258,8 @@ const events8Scene: SceneModel = ideFrame({
   session: s8,
   side: [
     {
-      type: 'plot', id: 'secs', compact: true, title: 'Seconds per flow, first event to last',
-      x: { labels: flows8.map((f) => f.flow.split('.').pop()!.replace('card_transactions', 'card_txns')) }, y: { min: 0, max: Math.ceil(Math.max(...flows8.map((f) => f.secs)) / 20) * 20, step: 20 },
+      type: 'plot', id: 'secs', compact: true, title: 'Seconds per flow, running to completed',
+      x: { labels: flows8.map((f) => ({ card_auths: 'auths', core_cdc: 'cdc', card_spend_daily: 'spend', card_transactions: 'txns', card_transactions_quarantine: 'quar.', customers: 'cust.', customers_history: 'hist.' } as Record<string, string>)[f.flow.split('.').pop()!] ?? f.flow) }, y: { min: 0, max: Math.ceil(Math.max(...flows8.map((f) => f.secs)) / 20) * 20, step: 20 },
       series: [{ kind: 'bar', points: flows8.map((f, i) => [i, f.secs]), tone: 'store' }],
     },
     {
@@ -252,7 +284,17 @@ const full9: SceneModel = ideFrame({
         tone: t.startsWith('bronze') ? 'ingest' as const : 'store' as const,
       })),
     },
-    { type: 'note', id: 'note', tone: 'ingest', text: 'Bronze holds files the sources may never send again, so a full refresh must not empty it. Silver and gold are derived: rebuilding them is always safe.' },
+    {
+      type: 'group', id: 'flow', title: 'One full refresh', icon: 'workflow', tone: 'store', ...FILL, children: [
+        { type: 'item', id: 'r-start', title: 'run.py --full-refresh', sub: 'recompute every dataset', icon: 'workflow' },
+        { type: 'item', id: 'r-bronze', title: 'bronze: reset not allowed', sub: 'kept: files the sources may not send again', icon: 'shield' },
+        { type: 'item', id: 'r-rest', title: 'silver and gold: rebuilt', sub: 'from bronze, to the same numbers', icon: 'check' },
+      ],
+    },
+  ],
+  edges: [
+    { from: 'r-start', to: 'r-bronze' },
+    { from: 'r-bronze', to: 'r-rest', label: 'then' },
   ],
 })
 

@@ -1,3 +1,12 @@
 $ python -m globalbank.counts
+  bronze.card_auths             16,797 rows
+  silver.card_transactions      16,666 rows
+  silver.customers               5,084 rows
+  gold.card_spend_daily              5 rows
 $ python -m globalbank.run --full-refresh | sed -n 1p
+update COMPLETED
 $ python -m globalbank.counts
+  bronze.card_auths             16,797 rows
+  silver.card_transactions      16,666 rows
+  silver.customers               5,084 rows
+  gold.card_spend_daily              5 rows
