@@ -4,7 +4,7 @@
 #     version 5) requires Python 3.12, so the course runs on 3.12, not the Spark course's 3.14.
 #     `python` is NOT relinked: the Spark and Python courses own it on a shared machine; the spine
 #     puts a `python` → python3.12 link first on PATH for its replays.
-# The Databricks CLI is added here when Course 2 pins it (it needs a workspace to show anything).
+#   the Databricks CLI 1.22.1 in /usr/local/bin, checked against the release's SHA256SUMS.
 # Usable as a cloud environment's setup script. Needs network access to PyPI and GitHub.
 set -euo pipefail
 PIN=3.12.15
@@ -23,4 +23,16 @@ if [ "$(python3.12 -c 'import platform; print(platform.python_version())' 2>/dev
   rm -rf "$work"
 fi
 python3.12 -c 'import platform; assert platform.python_version() == "'$PIN'"'
-echo "python3.12 $PIN in /usr/local"
+CLI=1.22.1
+if [ "$(databricks --version 2>/dev/null)" != "Databricks CLI v$CLI" ]; then
+  work=$(mktemp -d)
+  base=https://github.com/databricks/cli/releases/download/v$CLI
+  curl -sSfL -o "$work/cli.zip" "$base/databricks_cli_${CLI}_linux_amd64.zip"
+  curl -sSfL -o "$work/SHA256SUMS" "$base/databricks_cli_${CLI}_SHA256SUMS"
+  (cd "$work" && grep linux_amd64.zip SHA256SUMS | sed 's/ [^ ]*$/ cli.zip/' | sha256sum -c --quiet)
+  python3 -m zipfile -e "$work/cli.zip" "$work/x"
+  install -m 755 "$work/x/databricks" /usr/local/bin/databricks
+  rm -rf "$work"
+fi
+[ "$(databricks --version)" = "Databricks CLI v$CLI" ]
+echo "python3.12 $PIN in /usr/local; databricks CLI $CLI"

@@ -1,6 +1,6 @@
 # Learn Databricks by building a retail bank lakehouse: full course, beginner to professional — plan
 
-**Status: v1 plan (2026-10-26). Course 1 authored; Courses 2–12 wait on workspace access (Open decisions, 1).**
+**Status: v1 plan (2026-10-26). Courses 1–2 authored; the owner's Free Edition workspace is connected (2026-10-27).**
 
 ## The idea
 
@@ -86,7 +86,7 @@ Pinned once the Course 2 infra is built, then never changed. Candidates at the t
 
 | Tool | Candidate | Why |
 | --- | --- | --- |
-| Databricks CLI | latest at infra time | `auth`, `fs`, `bundle`, `pipelines`, `jobs` |
+| Databricks CLI | **1.22.1** (pinned, `scripts/install-toolchain.sh`, checksum-verified) | `auth`, `fs`, `bundle`, `pipelines`, `jobs` |
 | `databricks-connect` | 18.3.x | the docs' compatibility table (checked 2026-10-26) pairs serverless environment version 5 with Connect 18.0–18.3 and Python 3.12; PyPI's newest, 19.3, is ahead of serverless. Confirmed against the workspace in 2.3, not assumed |
 | Python | **3.12.15** (pinned, `scripts/install-toolchain.sh`) | Connect 18.3 requires 3.12; installed as `python3.12`, so the Spark course's `python` 3.14 is untouched |
 | `databricks-sdk` | 0.157.x | statement execution, system tables, the event log |
@@ -225,11 +225,11 @@ when the picture cannot fit the side pane at ≥ 24px body text in the 4K frame.
 
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
-| 1 | A workspace and the CLI | `databricks auth login`, `databricks current-user me` | laptop → CLI → workspace REST API; the profile file |
+| 1 | A workspace and the CLI | the README's two variables; `databricks auth describe`, `warehouses list` (OAuth `auth login` shown as the way for people) | laptop → CLI → workspace REST API; three ways to sign in |
 | 2 | ◆ full scene: where your code runs | concept + lab (`current-user me`, `warehouses list`) | control plane → serverless compute → storage; classic clusters documented |
 | 3 | Databricks Connect | `DatabricksSession.builder.serverless()`; `spark.range(3).show()` | the Spark API you know → Spark Connect → serverless |
 | 4 | Catalogs, schemas, volumes | `globalbank_dev` with `landing`, `bronze`, `silver`, `gold`; the `card_auths` volume | catalog → one schema per layer → table / volume, a three-part name |
-| 5 | Land the first files | `globalbank_sim` writes 1 October; `databricks fs cp` to the volume | laptop folder → `/Volumes/globalbank_dev/landing/card_auths/...` |
+| 5 | Land the first files | `land.sh`: `globalbank_sim` writes 1 October (93 files); `databricks fs cp` to the volume | laptop folder → `/Volumes/globalbank_dev/landing/card_auths/...` |
 | 6 | The first table | `saveAsTable` → `bronze.card_auths`; `DESCRIBE HISTORY` | the first bronze table: files + log, version 0 |
 
 **3. `land` · Land the card stream · 8** — landing → bronze

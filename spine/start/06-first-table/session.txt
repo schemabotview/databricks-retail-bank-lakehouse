@@ -1,0 +1,11 @@
+$ python -m globalbank.first_table
+5569 rows in globalbank_dev.bronze.card_auths
+amount is double
++-------+----------------------+-------------+
+|version|operation             |numOutputRows|
++-------+----------------------+-------------+
+|0      |CREATE TABLE AS SELECT|5569         |
++-------+----------------------+-------------+
+$ databricks tables get globalbank_dev.bronze.card_auths | grep -E '"(table_type|data_source_format)"'
+  "data_source_format": "DELTA",
+  "table_type": "MANAGED",

@@ -1,0 +1,3 @@
+$ python -m globalbank.catalog
+schemas: bronze, default, gold, information_schema, landing, silver
+volume:  /Volumes/globalbank_dev/landing/card_auths

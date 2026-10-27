@@ -1,0 +1,10 @@
+$ bash land.sh 2026-10-01 | wc -l
+93
+$ ls landing/card_auths/2026-10-01 | head -3
+auths-0000.json
+auths-0030.json
+auths-0100.json
+$ ls landing/card_auths/2026-10-01 | wc -l
+93
+$ databricks fs ls dbfs:/Volumes/globalbank_dev/landing/card_auths/2026-10-01 | wc -l
+93

@@ -1,0 +1,9 @@
+$ databricks --version
+Databricks CLI v1.22.1
+$ databricks auth describe | head -3
+Host: https://globalbank.cloud.databricks.com
+User: ana@globalbank.example
+Authenticated with: pat
+$ databricks warehouses list
+ID                Name                          Size      State
+7a06078381fd06fa  Serverless Starter Warehouse  2X-Small  STOPPED

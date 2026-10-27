@@ -26,7 +26,8 @@ the platform's:
   step fails rather than replaying without them. Every other step runs with them REMOVED, so a lab
   can never reach the workspace by accident. In a workspace step's transcript the real host is
   shown as https://globalbank.cloud.databricks.com and the real user as ana@globalbank.example,
-  and the workspace id (the host's digits) as 1234567890123456 — normalised here, never in a scene.
+  and the workspace and account ids as 1234567890123456 and 00000000-0000-4000-8000-000000000000 —
+  normalised here, never in a scene.
 - `volatile` also masks UUIDs and ISO timestamps (["ts"]): run ids, update ids and times change on
   every run against a live workspace. A scene READS such a value from the session.
 
@@ -54,6 +55,8 @@ step.json (other keys, all optional):
                                 digits, hex, UUIDs and timestamps masked; or a list of only the
                                 kinds to mask, e.g. ["uuid"], ["ts"] or ["digits"]
   {"setup": ["cmd", ...]}       run silently before the transcript (after the venv)
+  {"mask": ["RUNNING|STOPPED"]} regexes of what legitimately changes between runs: masked when
+                                comparing (a warehouse's state, a duration)
   {"generated": {"sf": 1, "from": "2026-10-01", "to": "2026-10-01", "only": ["card_auths"]}}
                                 data this step adds to its chain's (see above)
 """
@@ -85,6 +88,8 @@ SPINE_ROOT = Path(os.environ.get('SPINE_ROOT', '/tmp/globalbank-spine'))
 SHOWN_HOST = 'https://globalbank.cloud.databricks.com'
 SHOWN_USER = 'ana@globalbank.example'
 SHOWN_WORKSPACE_ID = '1234567890123456'
+SHOWN_ACCOUNT_ID = '00000000-0000-4000-8000-000000000000'
+SHOWN_NAME = 'Ana'
 WORKSPACE_VARS = ('DATABRICKS_HOST', 'DATABRICKS_TOKEN')
 TS = re.compile(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?')
 ANSI = re.compile(r'\x1b\[[0-9;?]*[@-~]|\x1b[=>]|\r')
@@ -147,7 +152,10 @@ def repl(cwd: Path, env: dict, inputs: list[str], argv: list[str]) -> str:
 
 def environment(home: Path, workspace: bool = False) -> dict:
     drop = ('VIRTUAL_ENV',) + (() if workspace else tuple(k for k in os.environ if k.startswith('DATABRICKS_')))
-    env = {k: v for k, v in os.environ.items() if k not in drop}
+    # The authoring agent's own variables: the Databricks CLI notices CLAUDECODE / AI_AGENT and
+    # prints an AI-tools hint that a learner's terminal never shows.
+    agent = lambda k: k.startswith('CLAUDE') or k in ('AI_AGENT',)
+    env = {k: v for k, v in os.environ.items() if k not in drop and not agent(k)}
     shim = SPINE_ROOT / 'bin'  # `python` is python3.12 inside a replay, as on the learner's machine
     shim.mkdir(parents=True, exist_ok=True)
     if not (shim / 'python').exists():
@@ -164,10 +172,17 @@ def workspace_identity() -> list[tuple[str, str]]:
     import urllib.request
     host = os.environ['DATABRICKS_HOST'].rstrip('/')
     req = urllib.request.Request(f'{host}/api/2.0/preview/scim/v2/Me', headers={'Authorization': f"Bearer {os.environ['DATABRICKS_TOKEN']}"})
-    user = json.load(urllib.request.urlopen(req, timeout=30))['userName']
-    pairs = [(host, SHOWN_HOST), (host.removeprefix('https://'), SHOWN_HOST.removeprefix('https://')), (user, SHOWN_USER)]
-    digits = re.search(r'(\d{6,})', host)
-    return pairs + ([(digits.group(1), SHOWN_WORKSPACE_ID)] if digits else [])
+    me = json.load(urllib.request.urlopen(req, timeout=30))
+    pairs = [(host, SHOWN_HOST), (host.removeprefix('https://'), SHOWN_HOST.removeprefix('https://')), (me['userName'], SHOWN_USER)]
+    if me.get('displayName') and me['displayName'] != me['userName']:
+        pairs.append((me['displayName'], SHOWN_NAME))
+    # The workspace and account ids are not in the host: ask the CLI, which resolves them.
+    described = subprocess.run(['databricks', 'auth', 'describe', '-o', 'json'], capture_output=True, text=True)
+    config = json.loads(described.stdout)['details']['configuration'] if described.returncode == 0 else {}
+    for key, shown in (('workspace_id', SHOWN_WORKSPACE_ID), ('account_id', SHOWN_ACCOUNT_ID)):
+        if config.get(key, {}).get('value'):
+            pairs.append((str(config[key]['value']), shown))
+    return pairs
 
 
 def venv_key(project: Path) -> str:
@@ -241,12 +256,19 @@ def replay(step: Path) -> tuple[str, dict[str, str]]:
     def fix(s: str) -> str:
         for real, shown in pairs:
             s = s.replace(real, shown)
+        # A FRAGMENT of a real identifier survives replacement (a storage path cut to 40 columns
+        # kept the account id's first 11 characters): refuse to write any transcript holding one.
+        for real, _ in pairs[1:]:
+            if len(real) >= 8 and not real.startswith('https://') and real[:8] in s:
+                sys.exit(f'✗ {step.relative_to(ROOT)}: the transcript holds part of a real identifier (the one shown as {_!r}) — change the command, never commit it')
         return s
     return fix(transcript).rstrip('\n') + '\n', {k: fix(v) for k, v in captured.items()}
 
 
 def masked(text: str, step: Path) -> str:
     """For a volatile step, hide what legitimately changes from run to run."""
+    for pattern in config_of(step).get('mask', []):
+        text = re.sub(pattern, '<masked>', text)
     kinds = config_of(step).get('volatile')
     if not kinds:
         return text
@@ -300,6 +322,17 @@ def lineage(step: Path) -> list[str]:
     out = [f'{name}: {path} differs from {config["from"]} but is not in "changes"' for path in sorted(differs) if not covered(path)]
     out += [f'{name}: "changes" lists {c}, which did not change' for c in changes if not any(under(p, c) for p in differs)]
     return out
+
+
+def same_generator(step: Path) -> list[str]:
+    """A project's copy of globalbank_sim must be the repo's, byte for byte: the course shows the
+    data `verify` checks, never a drifted copy."""
+    copy = step / 'project' / 'globalbank_sim'
+    if not copy.exists():
+        return []
+    ours = {p.relative_to(copy).as_posix(): p.read_bytes() for p in copy.rglob('*.py')}
+    repo = {p.relative_to(REPO / 'globalbank_sim').as_posix(): p.read_bytes() for p in (REPO / 'globalbank_sim').rglob('*.py')}
+    return [] if ours == repo else [f'{step.relative_to(ROOT)}: project/globalbank_sim differs from the repo\'s globalbank_sim — copy it again']
 
 
 def lineage_of(step: Path) -> list[Path]:
@@ -367,7 +400,7 @@ def main() -> int:
     problems = 0
     # The chain is checked over EVERY step, whatever was asked for: a filtered run must not hide a
     # parent edited out from under its children.
-    for problem in (p for s in every for p in lineage(s)):
+    for problem in (p for s in every for p in lineage(s) + same_generator(s)):
         problems += 1
         print(f'✗ {problem}')
     if problems and write:

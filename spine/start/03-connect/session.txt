@@ -1,0 +1,13 @@
+$ python -m venv .venv
+$ source .venv/bin/activate
+$ pip install -q -r requirements.txt
+$ python -m globalbank.hello
+Spark 4.2.0 on serverless
+as ana@globalbank.example, in catalog workspace
++---+
+| id|
++---+
+|  0|
+|  1|
+|  2|
++---+

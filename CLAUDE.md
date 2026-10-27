@@ -25,17 +25,20 @@ and pinned. Sister repos:
 
 ## Status
 
-2026-10-26: infra ported, `globalbank_sim` built and verified, Course 1 authored (concept frames,
-lab replayed, rendered at 4K, checked, looked at). **Courses 2–12 are blocked on workspace access**:
-no `DATABRICKS_HOST` / `DATABRICKS_TOKEN` in the authoring environment, and every section from 2
-on is a workspace run. They are not authored against a local stand-in: that would be the Spark
-course again, and every frame would be redone once the workspace exists. The owner reviews at the
-end (2026-10-26: "do course by course till end").
+2026-10-26: infra ported, `globalbank_sim` built and verified, Course 1 authored. 2026-10-27: the
+owner's Free Edition workspace connected (`DATABRICKS_HOST` / `DATABRICKS_TOKEN` as environment
+secrets); Course 2 authored on it. The owner reviews at the end (2026-10-26: "do course by course
+till end").
+
+**The owner's workspace holds other catalogs** (personal and training ones). Never list catalogs,
+groups or users unfiltered on screen: filter to `globalbank*`, or print our own objects only.
+`spine.py` refuses to write a transcript holding even a fragment of a real identifier (a storage
+path cut to 40 columns once kept the account id's first 11 characters).
 
 | # | Course | Sections | Status |
 | --- | --- | --- | --- |
 | 1 | `intro` | 4 | authored, replayed (lab), rendered, looked at; no audio |
-| 2 | `start` | 6 | blocked: needs the workspace (pilot) |
+| 2 | `start` | 6 | pilot: authored, replayed on the workspace, rendered, looked at; no audio |
 | 3 | `land` | 8 | not started |
 | 4 | `ledger` | 8 | not started |
 | 5 | `customers` | 7 | not started |
@@ -52,8 +55,22 @@ end (2026-10-26: "do course by course till end").
 CPython **3.12.15** as `python3.12` (`scripts/install-toolchain.sh`, also usable as the cloud
 environment's setup script): databricks-connect 18.3 (serverless environment version 5) needs 3.12.
 It does not relink `python` — the Spark course owns that on a shared machine; `spine.py` puts a
-`python` → python3.12 link first on PATH inside a replay. The Databricks CLI is pinned in Course 2.
-The generator is standard library only, so the repo needs no venv of its own.
+`python` → python3.12 link first on PATH inside a replay. Databricks CLI **1.22.1** (checked against
+the release's SHA256SUMS) and **databricks-connect 18.3.7** (the project's `requirements.txt`; on the
+workspace it reports Spark 4.2.0 on serverless). The generator is standard library only, so the
+repo needs no venv of its own.
+
+What the workspace taught the replay (Course 2):
+
+- **The CLI notices an AI agent** (`CLAUDECODE`, `AI_AGENT`) and prints an "aitools" hint a learner
+  never sees: `spine.py` drops the agent's own variables from the replay environment.
+- **Normalising the email breaks column alignment** (it is shorter than the real one): never show the
+  user inside a `show()` grid or a CLI table; print it as a line (2.3) or leave the command out (2.4
+  dropped `databricks schemas list`, whose Owner column misaligned).
+- **`databricks fs cp -r` copies in parallel** and prints in a different order every run: count it
+  (`| wc -l`), never show it.
+- **A cold serverless session takes ~30 s**; a course replays in a few minutes.
+- The workspace and account ids come from `databricks auth describe -o json`, not the host.
 
 ## The data: `globalbank_sim`
 

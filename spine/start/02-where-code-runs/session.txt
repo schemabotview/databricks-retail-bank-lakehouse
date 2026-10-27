@@ -1,0 +1,18 @@
+$ databricks auth describe
+Host: https://globalbank.cloud.databricks.com
+User: ana@globalbank.example
+Authenticated with: pat
+-----
+Current configuration:
+  ✓ host: https://globalbank.cloud.databricks.com (from DATABRICKS_HOST environment variable)
+  ✓ account_id: 00000000-0000-4000-8000-000000000000
+  ✓ workspace_id: 1234567890123456
+  ✓ token: ******** (from DATABRICKS_TOKEN environment variable)
+  ✓ profile: default
+  ✓ auth_type: pat
+  ✓ cloud: AWS
+  ✓ audience: https://globalbank.cloud.databricks.com/oidc/v1/token
+  ✓ discovery_url: https://globalbank.cloud.databricks.com/oidc/.well-known/oauth-authorization-server
+$ databricks warehouses list
+ID                Name                          Size      State
+7a06078381fd06fa  Serverless Starter Warehouse  2X-Small  STOPPED
