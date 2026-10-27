@@ -19,7 +19,6 @@ import flags from '../../../spine/detect/07-score/session.txt?raw'
 // documented map of where each part goes next.
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
-const num = (s: string) => Number(s.replace(/,/g, ''))
 const FILL = { spread: true, minH: 520 } as const
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({

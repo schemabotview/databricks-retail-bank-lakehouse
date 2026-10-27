@@ -48,7 +48,7 @@ const g1 = graph(outputOf(s1, `${J} deploy`))
 const tn1 = taskNodes(g1)
 const nightly1Scene: SceneModel = ideFrame({
   tree: tree(['resources/nightly.yml', 'jobs/check.py', 'sql/fraud/flags.sql', 'globalbank/job.py'], 'resources/nightly.yml', ['resources/nightly.yml', 'jobs/check.py', 'sql/fraud/flags.sql', 'globalbank/job.py']),
-  editor: { file: 'resources/nightly.yml', code: nightly1, lang: 'yaml', ...view(nightly1, '      tasks:', undefined, 0), highlight: linesFrom(nightly1, '- task_key: pipeline', 'pipeline_id: ${resources.pipelines.globalbank_pipeline.id}') },
+  editor: { file: 'resources/nightly.yml', code: nightly1, lang: 'text', ...view(nightly1, '      tasks:', undefined, 0), highlight: linesFrom(nightly1, '- task_key: pipeline', 'pipeline_id: ${resources.pipelines.globalbank_pipeline.id}') },
   session: s1,
   side: [
     { type: 'group', id: 'graph', title: 'globalbank_nightly: the task graph', icon: 'workflow', tone: 'ingest', ...FILL, children: tn1.nodes },
@@ -73,7 +73,7 @@ const run2: SceneModel = ideFrame({
 const r3 = report(outputOf(s3, `${J} wait`))
 const fileArrival3: SceneModel = ideFrame({
   tree: tree(['resources/nightly.yml', 'globalbank/job.py', 'land.sh'], 'resources/nightly.yml'),
-  editor: { file: 'resources/nightly.yml', code: nightly3, lang: 'yaml', highlight: linesFrom(nightly3, 'trigger:', 'file_arrival:') },
+  editor: { file: 'resources/nightly.yml', code: nightly3, lang: 'text', highlight: linesFrom(nightly3, 'trigger:', 'file_arrival:') },
   session: s3,
   side: [
     {
@@ -180,7 +180,7 @@ void nightly6
 const who7 = outputOf(s7, `${J} who`).split('\n')
 const runAs7: SceneModel = ideFrame({
   tree: tree(['resources/nightly.yml', 'globalbank/job.py'], 'resources/nightly.yml'),
-  editor: { file: 'resources/nightly.yml', code: nightly7, lang: 'yaml', ...view(nightly7, 'resources:', '      tasks:', 0), highlight: linesFrom(nightly7, 'run_as:', 'on_failure:') },
+  editor: { file: 'resources/nightly.yml', code: nightly7, lang: 'text', ...view(nightly7, 'resources:', '      tasks:', 0), highlight: linesFrom(nightly7, 'run_as:', 'on_failure:') },
   session: s7,
   side: [
     {
