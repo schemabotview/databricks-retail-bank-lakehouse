@@ -12,9 +12,9 @@ resources:
           spec: {environment_version: "4"}
       trigger:  # a new clearing file starts the run
         file_arrival: {url: /Volumes/globalbank_dev/landing/settlements/}
-      run_as: {user_name: ${workspace.current_user.userName}}
+      run_as: {user_name: "${workspace.current_user.userName}"}
       email_notifications:
-        on_failure: [${workspace.current_user.userName}]
+        on_failure: ["${workspace.current_user.userName}"]
       tasks:
         - task_key: pipeline
           pipeline_task:
@@ -23,17 +23,17 @@ resources:
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/daily_balances.sql}
+            file: {path: "${workspace.file_path}/sql/gold/daily_balances.sql"}
         - task_key: statements
           depends_on: [{task_key: balances}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/monthly_statements.sql}
+            file: {path: "${workspace.file_path}/sql/gold/monthly_statements.sql"}
         - task_key: flags
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/fraud/flags.sql}
+            file: {path: "${workspace.file_path}/sql/fraud/flags.sql"}
         - task_key: check
           depends_on: [{task_key: statements}, {task_key: flags}]
           environment_key: default
@@ -44,5 +44,5 @@ resources:
           depends_on: [{task_key: check}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/month_end.sql}
+            file: {path: "${workspace.file_path}/sql/gold/month_end.sql"}
             parameters: {month: "{{tasks.check.values.month}}"}

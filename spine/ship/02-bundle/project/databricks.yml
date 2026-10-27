@@ -7,14 +7,16 @@ include:
   - resources/*.yml
 
 sync:
-  exclude: [.venv, .venv-test, landing]
+  exclude: [.venv*, landing]
 
 variables:
   warehouse_id:
     lookup: {warehouse: Serverless Starter Warehouse}
+  catalog:
+    default: globalbank_dev
 
 targets:
   dev:
     mode: development  # schedules and triggers paused
     default: true
-    presets: {name_prefix: dev_}
+    presets: {name_prefix: "dev_${workspace.current_user.short_name}_"}

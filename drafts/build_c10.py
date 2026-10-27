@@ -26,17 +26,17 @@ TASKS = """      tasks:
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/daily_balances.sql}
+            file: {path: "${workspace.file_path}/sql/gold/daily_balances.sql"}
         - task_key: statements
           depends_on: [{task_key: balances}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/monthly_statements.sql}
+            file: {path: "${workspace.file_path}/sql/gold/monthly_statements.sql"}
         - task_key: flags
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/fraud/flags.sql}
+            file: {path: "${workspace.file_path}/sql/fraud/flags.sql"}
         - task_key: check
           depends_on: [{task_key: statements}, {task_key: flags}]
           environment_key: default
@@ -49,7 +49,7 @@ MONTH_END_TASK = """        - task_key: month_end
           depends_on: [{task_key: check}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/month_end.sql}
+            file: {path: "${workspace.file_path}/sql/gold/month_end.sql"}
 """
 
 MONTH_END_PARAMS = """            parameters: {month: "{{tasks.check.values.month}}"}
@@ -75,9 +75,9 @@ resources:
         file_arrival: {url: /Volumes/globalbank_dev/landing/settlements/}
 """
     if owner:
-        head += """      run_as: {user_name: ${workspace.current_user.userName}}
+        head += """      run_as: {user_name: "${workspace.current_user.userName}"}
       email_notifications:
-        on_failure: [${workspace.current_user.userName}]
+        on_failure: ["${workspace.current_user.userName}"]
 """
     body = TASKS + (MONTH_END_TASK + (MONTH_END_PARAMS if params else '') if month_end else '')
     return head + body

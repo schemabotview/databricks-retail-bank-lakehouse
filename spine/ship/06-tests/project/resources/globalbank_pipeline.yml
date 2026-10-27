@@ -4,7 +4,7 @@ resources:
     globalbank_pipeline:
       name: globalbank_pipeline
       serverless: true
-      catalog: globalbank_dev
+      catalog: ${var.catalog}
       schema: bronze
       libraries:
         - file: {path: ../pipelines/bronze.py}

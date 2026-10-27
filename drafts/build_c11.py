@@ -2,7 +2,8 @@
 
 A Declarative Automation Bundle deploys the pipeline, the nightly job and the dashboard from the
 repo (databricks.yml + resources/*.yml; the job's YAML is Course 10's file, unchanged). The dev
-target sets its own name prefix, so no name derived from the user's email is shown. Free Edition
+target prefixes names with dev_<short name> (development mode requires the user in the prefix; the
+replay normalises it to ana). Free Edition
 has one workspace and one pipeline per type, so the prod target is validated, not deployed: a real
 bank's prod is another workspace. Tests: transforms unit-tested with LOCAL PySpark (run local, a
 venv of its own: PySpark and Databricks Connect cannot share one) and one Connect test on the
@@ -49,23 +50,26 @@ include:
   - resources/*.yml
 
 sync:
-  exclude: [.venv, .venv-test, landing]
+  exclude: [.venv*, landing]
 
 variables:
   warehouse_id:
     lookup: {warehouse: Serverless Starter Warehouse}
+  catalog:
+    default: globalbank_dev
 
 targets:
   dev:
     mode: development  # schedules and triggers paused
     default: true
-    presets: {name_prefix: dev_}
+    presets: {name_prefix: "dev_${workspace.current_user.short_name}_"}
 #PROD#"""
 
 PROD = """  prod:
-    mode: production
+    mode: production  # another workspace, in a real bank
+    variables: {catalog: globalbank_prod}
     workspace:
-      root_path: /Workspace/Shared/.bundle/${bundle.name}/prod
+      root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/prod
 """
 
 PIPELINE_YML = """# The medallion pipeline (Course 7), deployed by the bundle.
@@ -74,7 +78,7 @@ resources:
     globalbank_pipeline:
       name: globalbank_pipeline
       serverless: true
-      catalog: globalbank_dev
+      catalog: ${var.catalog}
       schema: bronze
       libraries:
         - file: {path: ../pipelines/bronze.py}
@@ -216,7 +220,7 @@ if __name__ == '__main__':
           'tests/test_transforms.py': TEST_LOCAL, 'tests/test_workspace.py': TEST_WS},
          ['.venv-test/bin/python -m pytest -q tests/test_transforms.py 2>&1 | tail -1',
           'python -m pytest -q tests/test_workspace.py 2>&1 | tail -1'],
-         LAND[:3] + [q(f'{B} deploy'), q(f'{B} run globalbank_pipeline')] + TESTENV,
+         LAND + [q(f'{B} deploy'), q(f'{B} run globalbank_pipeline')] + TESTENV,
          extra={'mask': [r'in [\d.]+s']})
     step(P, '07-ci', f'{P}/06-tests', ['.github/workflows/deploy.yml'], {'.github/workflows/deploy.yml': WORKFLOW},
          [f'{B} validate -t prod | tail -1'], [RESET])

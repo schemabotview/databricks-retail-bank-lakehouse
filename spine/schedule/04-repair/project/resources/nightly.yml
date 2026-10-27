@@ -20,17 +20,17 @@ resources:
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/daily_balances.sql}
+            file: {path: "${workspace.file_path}/sql/gold/daily_balances.sql"}
         - task_key: statements
           depends_on: [{task_key: balances}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/gold/monthly_statements.sql}
+            file: {path: "${workspace.file_path}/sql/gold/monthly_statements.sql"}
         - task_key: flags
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: ${workspace.file_path}/sql/fraud/flags.sql}
+            file: {path: "${workspace.file_path}/sql/fraud/flags.sql"}
         - task_key: check
           depends_on: [{task_key: statements}, {task_key: flags}]
           environment_key: default
