@@ -70,7 +70,9 @@ if __name__ == '__main__':
     path = Path(sys.argv[1])
     params = dict(arg.split('=', 1) for arg in sys.argv[2:])
     for sql in [s for s in path.read_text().split(';') if s.strip()]:
-        show(*run(w, sql, **params))
+        columns, rows = run(w, sql, **params)
+        if rows:  # a CREATE … AS returns nothing to show
+            show(columns, rows)
 '''
 
 CARD_SPEND = """-- Gold, as the business reads it: approved card spend per day, in EUR.
@@ -158,7 +160,11 @@ SELECT a.account_id, d.day,
          PARTITION BY a.account_id ORDER BY d.day) AS balance
 FROM globalbank_dev.silver.accounts a
 JOIN days d ON d.day >= a.opened
-LEFT JOIN daily m ON m.account_id = a.account_id AND m.day = d.day
+LEFT JOIN daily m ON m.account_id = a.account_id AND m.day = d.day;
+
+SELECT count(*) AS rows, count(DISTINCT account_id) AS accounts,
+       min(day) AS first_day, max(day) AS last_day
+FROM globalbank_dev.gold.daily_balances
 """
 
 BALANCE_OF = """-- One account's October, a week to a row: the balance each evening.
@@ -200,15 +206,23 @@ JOIN globalbank_dev.gold.daily_balances o
   ON o.account_id = b.account_id AND o.day = DATE'2026-09-30'
 LEFT JOIN card ON card.account_id = b.account_id
 LEFT JOIN core ON core.account_id = b.account_id
-WHERE b.day = DATE'2026-10-31'
+WHERE b.day = DATE'2026-10-31';
+
+SELECT count(*) AS statements, round(avg(closing)) AS avg_closing,
+       count_if(closing < 0) AS overdrawn
+FROM globalbank_dev.gold.monthly_statements
 """
 
 STATEMENT_OF = """-- One account's October statement, a line per entry.
-SELECT stack(7, 'opening balance', opening, 'card payments', -cards,
-             'salary', salary, 'rent', rent, 'transfers', transfers,
-             'closing balance', closing,
-             'check', opening - cards + salary + rent + transfers - closing)
-       AS (line, eur)
+SELECT stack(7,
+         'opening balance', CAST(opening AS DECIMAL(18,2)),
+         'card payments', CAST(-cards AS DECIMAL(18,2)),
+         'salary', CAST(salary AS DECIMAL(18,2)),
+         'rent', CAST(rent AS DECIMAL(18,2)),
+         'transfers', CAST(transfers AS DECIMAL(18,2)),
+         'closing balance', CAST(closing AS DECIMAL(18,2)),
+         'check', CAST(opening - cards + salary + rent + transfers - closing
+                       AS DECIMAL(18,2))) AS (line, eur)
 FROM globalbank_dev.gold.monthly_statements
 WHERE account_id = :account
 """
@@ -220,7 +234,10 @@ SELECT to_date(t.auth_ts) AS day, count(*) AS approved,
 FROM globalbank_dev.silver.card_transactions t
 LEFT JOIN globalbank_dev.silver.settlements s USING (auth_id)
 WHERE t.status = 'APPROVED'
-GROUP BY ALL
+GROUP BY ALL;
+
+SELECT count(*) AS days, sum(approved) AS approved FROM
+globalbank_dev.gold.regulatory_snapshot
 """
 
 ASOF = '''"""The regulator's question: the report as it stood then, and as it is now."""

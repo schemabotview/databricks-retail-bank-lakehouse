@@ -1,2 +1,4 @@
 $ python -m globalbank.warehouse sql/gold/monthly_statements.sql
+num_affected_rows  num_inserted_rows
 $ python -m globalbank.warehouse sql/gold/statement_of.sql account=A0000011
+FAILED: [DATATYPE_MISMATCH.STACK_COLUMN_DIFF_TYPES] Cannot resolve "stack(7, opening balance, opening, card payments, (- cards), salary, salary, rent, rent, transfers, transfers, closing balance, closing, check, (((((opening - cards) + salary) + rent) + transfers) - closing))" due to data type mismatch: The data type of the column (1) do not have the same type: "DECIMAL(38,2)" (2) <> "DECIMAL(28,2)" (4). SQLSTATE: 42K09; line 2 pos 7

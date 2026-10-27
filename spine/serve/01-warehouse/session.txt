@@ -1,2 +1,8 @@
 $ python -m globalbank.warehouse --about
+Serverless Starter Warehouse: 2X-Small, serverless True
 $ python -m globalbank.warehouse sql/gold/card_spend.sql
+day         auths  spend
+2026-10-28     86    5844.33
+2026-10-29   5064  286286.87
+2026-10-30   5108  293552.52
+2026-10-31   5769  323985.34

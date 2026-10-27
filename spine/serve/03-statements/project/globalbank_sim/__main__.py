@@ -107,8 +107,8 @@ def write(world: World, out: Path, first: date, last: date, only: set[str]) -> N
                 write_lines(out / 'app_events' / str(d) / f'events-{h:02d}.json', lines)
         if want('fx_rates'):
             write_csv(out / 'fx_rates' / f'fx-{d}.csv', world.fx_rates(d))
-    if want('settlements'):  # clearing runs past the last authorization day
-        end = SETTLE_LAST if last == LAST else last
+    if want('settlements'):  # a full run's clearing runs past the last authorization day
+        end = SETTLE_LAST if (first, last) == (FIRST, LAST) else last
         for d in days(first, end):
             rows = world.settlements_on(d)
             if rows:

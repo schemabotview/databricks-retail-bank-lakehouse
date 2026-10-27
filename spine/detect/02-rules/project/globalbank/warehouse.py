@@ -47,4 +47,6 @@ if __name__ == '__main__':
     path = Path(sys.argv[1])
     params = dict(arg.split('=', 1) for arg in sys.argv[2:])
     for sql in [s for s in path.read_text().split(';') if s.strip()]:
-        show(*run(w, sql, **params))
+        columns, rows = run(w, sql, **params)
+        if rows:  # a CREATE … AS returns nothing to show
+            show(columns, rows)

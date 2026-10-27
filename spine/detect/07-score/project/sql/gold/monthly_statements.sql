@@ -27,4 +27,8 @@ JOIN globalbank_dev.gold.daily_balances o
   ON o.account_id = b.account_id AND o.day = DATE'2026-09-30'
 LEFT JOIN card ON card.account_id = b.account_id
 LEFT JOIN core ON core.account_id = b.account_id
-WHERE b.day = DATE'2026-10-31'
+WHERE b.day = DATE'2026-10-31';
+
+SELECT count(*) AS statements, round(avg(closing)) AS avg_closing,
+       count_if(closing < 0) AS overdrawn
+FROM globalbank_dev.gold.monthly_statements

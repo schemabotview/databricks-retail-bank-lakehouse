@@ -231,6 +231,9 @@ def replay(step: Path) -> tuple[str, dict[str, str]]:
     try:
         for cmd in config.get('setup', []):
             r = subprocess.run(['bash', '-c', cmd], cwd=project, env=env, capture_output=True, text=True)
+            if r.returncode:  # once more: an upload to the workspace can fail on a network blip
+                time.sleep(10)
+                r = subprocess.run(['bash', '-c', cmd], cwd=project, env=env, capture_output=True, text=True)
             if r.returncode:
                 sys.exit(f'✗ {step.relative_to(ROOT)}: setup `{cmd}` failed:\n{r.stdout}{r.stderr}')
         cwd = project

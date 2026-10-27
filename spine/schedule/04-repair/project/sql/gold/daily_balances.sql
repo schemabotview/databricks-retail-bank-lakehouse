@@ -19,4 +19,8 @@ SELECT a.account_id, d.day,
          PARTITION BY a.account_id ORDER BY d.day) AS balance
 FROM globalbank_dev.silver.accounts a
 JOIN days d ON d.day >= a.opened
-LEFT JOIN daily m ON m.account_id = a.account_id AND m.day = d.day
+LEFT JOIN daily m ON m.account_id = a.account_id AND m.day = d.day;
+
+SELECT count(*) AS rows, count(DISTINCT account_id) AS accounts,
+       min(day) AS first_day, max(day) AS last_day
+FROM globalbank_dev.gold.daily_balances

@@ -1,4 +1,18 @@
 $ bash land.sh 2026-11-01 settlements 2026-11-03 | wc -l
+3
 $ python -m globalbank.run | sed -n 1p
+update COMPLETED
 $ python -m globalbank.warehouse sql/gold/regulatory_snapshot.sql > /dev/null
 $ python -m globalbank.asof
+as reported: version 0, written 2026-10-27T21:51
+day         approved  cleared  cleared_eur
+2026-10-28        92       92      5909.61
+2026-10-29      5449     5449    303466.98
+2026-10-30      5442     5442    305870.20
+2026-10-31      6200     6200    343145.62
+as restated: version 1, written 2026-10-27T21:53
+day         approved  cleared  cleared_eur
+2026-10-28        92       92      5909.61
+2026-10-29      5449     5449    303466.98
+2026-10-30      5442     5442    305870.20
+2026-10-31      6200     6200    343145.62

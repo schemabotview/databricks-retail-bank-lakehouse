@@ -5,4 +5,7 @@ SELECT to_date(t.auth_ts) AS day, count(*) AS approved,
 FROM globalbank_dev.silver.card_transactions t
 LEFT JOIN globalbank_dev.silver.settlements s USING (auth_id)
 WHERE t.status = 'APPROVED'
-GROUP BY ALL
+GROUP BY ALL;
+
+SELECT count(*) AS days, sum(approved) AS approved FROM
+globalbank_dev.gold.regulatory_snapshot
