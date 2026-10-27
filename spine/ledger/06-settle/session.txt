@@ -1,0 +1,11 @@
+$ bash land.sh 2026-10-11 settlements | wc -l
+1
+$ python -m globalbank.land settlements
+globalbank_dev.bronze.settlements: 0 + 5,721 = 5,721 rows
+$ python -m globalbank.ledger settle 2026-10-11
+globalbank_dev.silver.card_transactions: 35,073 rows
+$ python -m globalbank.statuses
+APPROVED   31,975 auths  
+DECLINED    1,047 auths  
+REVERSED       61 auths           0.00 EUR
+SETTLED     1,990 auths     116,447.63 EUR

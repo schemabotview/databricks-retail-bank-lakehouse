@@ -243,19 +243,32 @@ if __name__ == '__main__':
 """
 
 WRITERS = """\"\"\"Two writers, one table: post two days at the same moment.\"\"\"
+import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
 
 from globalbank.ledger import SILVER, create, post
 from globalbank.session import get_spark
 
+
+def post_until_committed(day):
+    \"\"\"Post a day; if another writer committed first, read again and retry.\"\"\"
+    for attempt in range(1, 4):
+        try:
+            post(spark, day)
+            return f'{day}: committed on attempt {attempt}'
+        except Exception as e:
+            conflict = re.search(r'\\[(DELTA_CONCURRENT\\w*)', str(e))
+            if not conflict:
+                raise
+            print(f'{day}: {conflict.group(1)}, retrying')
+
+
 spark = get_spark()
 create(spark)
 with ThreadPoolExecutor(max_workers=2) as pool:
-    done = pool.map(lambda day: post(spark, day), sys.argv[1:])
-    list(done)  # raises here if either writer failed
-for day in sys.argv[1:]:
-    print(f'{day}: committed')
+    for line in pool.map(post_until_committed, sys.argv[1:]):
+        print(line)
 print(f'{SILVER}: {spark.table(SILVER).count():,} rows')
 """
 
@@ -267,14 +280,16 @@ from globalbank.session import get_spark
 SILVER = 'globalbank_dev.silver.card_transactions'
 
 spark = get_spark()
-last = spark.sql(f'DESCRIBE HISTORY {SILVER} LIMIT 1').first()
+last = spark.sql(f'DESCRIBE HISTORY {SILVER}') \\
+    .where("operation = 'MERGE'").orderBy('version', ascending=False).first()
 m = last.operationMetrics
 print(f'version {last.version}: {last.operation}')
 for key in ['numTargetRowsUpdated', 'numTargetFilesAdded',
             'numTargetFilesRemoved', 'numTargetDeletionVectorsAdded']:
     print(f'  {key:<31}{m.get(key, "-"):>7}')
 features = spark.sql(f'DESCRIBE DETAIL {SILVER}').first().tableFeatures
-print('table features:', ', '.join(sorted(features)))
+print('deletionVectors:', 'on' if 'deletionVectors' in features else 'off',
+      f'({len(features)} table features)')
 """
 
 CHANGES = open('changes.tpl').read()
@@ -295,7 +310,7 @@ step('04-constraints', 'ledger/03-restore', ['globalbank/ledger.py'], {'globalba
      POSTED)
 step('05-two-writers', 'ledger/04-constraints', ['globalbank/writers.py'], {'globalbank/writers.py': WRITERS},
      ['python -m globalbank.writers 2026-10-15 2026-10-16', f'python -m globalbank.history {SILVER} | tail -3'],
-     LANDED_ALL + [post(d) for d in DAYS])
+     LANDED_ALL + [post(d) for d in DAYS], extra={'mask': [r'2026-10-1[56]']})
 step('06-settle', 'ledger/05-two-writers', ['globalbank/ledger.py', 'globalbank/land.py', 'globalbank/catalog.py', 'land.sh', 'globalbank/statuses.py'],
      {'globalbank/ledger.py': ledger(constraint=True, settle=True), 'globalbank/land.py': LAND_PY, 'globalbank/catalog.py': CATALOG6,
       'land.sh': LAND_SH, 'globalbank/statuses.py': STATUSES},

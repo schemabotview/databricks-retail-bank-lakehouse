@@ -1,0 +1,9 @@
+$ python -m globalbank.ledger settle 2026-10-12
+globalbank_dev.silver.card_transactions: 35,073 rows
+$ python -m globalbank.dv
+version 10: MERGE
+  numTargetRowsUpdated              4102
+  numTargetFilesAdded                  1
+  numTargetFilesRemoved                0
+  numTargetDeletionVectorsAdded        1
+deletionVectors: on (7 table features)

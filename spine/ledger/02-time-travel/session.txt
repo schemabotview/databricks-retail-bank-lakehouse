@@ -1,0 +1,12 @@
+$ python -m globalbank.history globalbank_dev.silver.card_transactions
+version 0  CREATE TABLE              
+version 1  MERGE                 6411
+version 2  MERGE                 6412
+version 3  MERGE                 5579
+version 4  MERGE                 5580
+version 5  MERGE                 5518
+$ python -m globalbank.daily 4
+2026-10-10   5,837 auths    333,191.79 EUR
+2026-10-11   5,849 auths    334,863.94 EUR
+2026-10-12   5,074 auths    285,995.61 EUR
+2026-10-13   5,090 auths    292,315.73 EUR

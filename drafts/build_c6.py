@@ -30,19 +30,11 @@ print('catalogs: ', ', '.join(r.catalog for r in catalogs))
 print('owner:    ', spark.sql("""SELECT catalog_owner
     FROM system.information_schema.catalogs
     WHERE catalog_name = 'globalbank_dev'""").first()[0])
-objects = spark.sql("""
-    SELECT table_schema AS schema, count(*) AS n
-    FROM globalbank_dev.information_schema.tables
-    WHERE table_schema NOT IN ('information_schema') GROUP BY ALL""").collect()
-volumes = spark.sql("""
-    SELECT volume_schema AS schema, count(*) AS n
-    FROM globalbank_dev.information_schema.volumes GROUP BY ALL""").collect()
-tables = {r.schema: r.n for r in objects}
-vols = {r.schema: r.n for r in volumes}
 print('globalbank_dev:')
 for schema in ['landing', 'bronze', 'silver', 'gold', 'governance', 'vault']:
-    print(f'  {schema:<11} {tables.get(schema, 0)} tables,'
-          f' {vols.get(schema, 0)} volumes')
+    tables = spark.sql(f'SHOW TABLES IN globalbank_dev.{schema}').count()
+    volumes = spark.sql(f'SHOW VOLUMES IN globalbank_dev.{schema}').count()
+    print(f'  {schema:<11} {tables} tables, {volumes} volumes')
 '''
 
 GOVERN = '''"""Apply a governance file: each statement, and what the workspace said."""
@@ -54,7 +46,7 @@ from globalbank.session import get_spark
 spark = get_spark()
 done = refused = 0
 reasons = set()
-for statement in open(sys.argv[1]).read().split(';\n'):  # one per line end
+for statement in open(sys.argv[1]).read().split(';\\n'):  # at line ends
     sql = '\\n'.join(line for line in statement.splitlines()
                     if not line.lstrip().startswith('--')).strip()
     if not sql:
@@ -274,8 +266,8 @@ print(f"REORG ... PURGE: {m['numAddedFiles']} file written,"
 spark.sql(f'VACUUM {VAULT}')
 start = spark.sql(f"DESCRIBE HISTORY {VAULT}").where(
     "operation = 'VACUUM START'").first().operationMetrics
-print(f"VACUUM: {start['numFilesToDelete']} files deleted now: the removed file"
-      ' goes once it is older than the 7-day retention')
+print(f"VACUUM: {start['numFilesToDelete']} files deleted now;"
+      ' the old file goes after the 7-day retention')
 '''
 
 INGESTED = [RESET, CAT, 'bash land.sh 2026-09-01 core_cdc 2026-10-31 > /dev/null',
@@ -294,7 +286,7 @@ step(P, '02-grants', f'{P}/01-unity-catalog', ['globalbank/govern.py', 'governan
      [GOV + 'grants.sql'], INGESTED)
 step(P, '03-masks', f'{P}/02-grants', ['governance/masks.sql', 'globalbank/roles.py', 'globalbank/peek.py'],
      {'governance/masks.sql': MASKS, 'globalbank/roles.py': ROLES, 'globalbank/peek.py': PEEK},
-     [GOV + 'masks.sql', 'python -m globalbank.peek', 'python -m globalbank.roles risk', 'python -m globalbank.peek'],
+     [GOV + 'masks.sql | tail -1', 'python -m globalbank.peek', 'python -m globalbank.roles risk', 'python -m globalbank.peek'],
      INGESTED)
 step(P, '04-row-filters', f'{P}/03-masks', ['governance/filters.sql', 'globalbank/regions.py'],
      {'governance/filters.sql': FILTERS, 'globalbank/regions.py': REGIONS},

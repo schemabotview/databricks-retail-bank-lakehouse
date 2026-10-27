@@ -1,0 +1,10 @@
+$ python -m globalbank.restore globalbank_dev.silver.card_transactions 4
+globalbank_dev.silver.card_transactions: removed 1 file(s), restored 0
+$ python -m globalbank.history globalbank_dev.silver.card_transactions | tail -2
+version 5  MERGE                 5518
+version 6  RESTORE                   
+$ python -m globalbank.daily
+2026-10-10   5,837 auths    333,191.79 EUR
+2026-10-11   5,849 auths    334,863.94 EUR
+2026-10-12   5,074 auths    285,995.61 EUR
+2026-10-13   5,090 auths    292,315.73 EUR

@@ -1,0 +1,9 @@
+$ python -m globalbank.writers 2026-10-15 2026-10-16
+2026-10-15: DELTA_CONCURRENT_APPEND, retrying
+2026-10-15: committed on attempt 2
+2026-10-16: committed on attempt 1
+globalbank_dev.silver.card_transactions: 35,073 rows
+$ python -m globalbank.history globalbank_dev.silver.card_transactions | tail -3
+version 5  MERGE                 5580
+version 6  MERGE                 5506
+version 7  MERGE                 5585

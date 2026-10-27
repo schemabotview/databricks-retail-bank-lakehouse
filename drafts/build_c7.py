@@ -315,11 +315,12 @@ spark.sql(f"""SELECT * FROM {log} WHERE origin.update_id = (
     SELECT origin.update_id FROM {log} WHERE event_type = 'create_update'
     ORDER BY timestamp DESC LIMIT 1)""").createOrReplaceTempView('last_update')
 kinds = spark.sql("""SELECT event_type, count(*) AS n FROM last_update
-                     GROUP BY ALL ORDER BY n DESC LIMIT 4""").collect()
+                     GROUP BY ALL ORDER BY n DESC LIMIT 3""").collect()
 print('events:', ', '.join(f'{k.event_type} {k.n}' for k in kinds))
 for f in spark.sql("""
         SELECT origin.flow_name AS flow,
-               max_by(details:flow_progress.status, timestamp) AS status,
+               max_by(details:flow_progress.status, timestamp) FILTER (
+                   WHERE details:flow_progress.status IS NOT NULL) AS status,
                timestampdiff(SECOND, min(timestamp), max(timestamp)) AS secs
         FROM last_update WHERE event_type = 'flow_progress'
         GROUP BY ALL ORDER BY flow""").collect():
@@ -331,7 +332,7 @@ COUNTS = '''"""Rows per table, bronze to gold."""
 from globalbank.session import get_spark
 
 spark = get_spark()
-for t in ['bronze.card_auths', 'bronze.core_cdc', 'silver.card_transactions',
+for t in ['bronze.card_auths', 'silver.card_transactions',
           'silver.customers', 'gold.card_spend_daily']:
     print(f'  {t:<28}{spark.table(f"globalbank_dev.{t}").count():>8,} rows')
 '''
@@ -364,10 +365,10 @@ step(P, '06-quarantine', f'{P}/05-expectations', ['pipelines/silver.py', 'global
      [RUN1, 'python -m globalbank.recon'], PIPE + LAND_ALL + [q(DEP)])
 step(P, '07-auto-cdc', f'{P}/06-quarantine', ['pipelines/silver.py'],
      {'pipelines/silver.py': SILVER_EXPECT + QUARANTINE + CDC},
-     [RUN1, 'python -m globalbank.customer C000001'], PIPE + LAND_ALL + [q(DEP)])
+     [RUN1, 'python -m globalbank.customer C000001 | tail -1'], PIPE + LAND_ALL + [q(DEP)])
 step(P, '08-event-log', f'{P}/07-auto-cdc', ['globalbank/events.py'], {'globalbank/events.py': EVENTS},
      ['python -m globalbank.events'], PIPE + LAND_ALL + [q(DEP), q(RUN1)], extra={'volatile': ['digits']})
 step(P, '09-full-refresh', f'{P}/08-event-log', ['globalbank/counts.py'], {'globalbank/counts.py': COUNTS},
-     ['python -m globalbank.counts', RUN1 + ' --full-refresh', 'python -m globalbank.counts'],
+     ['python -m globalbank.counts', RUN1 + ' --full-refresh | head -1', 'python -m globalbank.counts'],
      PIPE + LAND_ALL + [q(DEP), q(RUN1)])
 print('built')

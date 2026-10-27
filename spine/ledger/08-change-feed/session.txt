@@ -1,0 +1,8 @@
+$ python -m globalbank.ledger settle 2026-10-13
+globalbank_dev.silver.card_transactions: 35,073 rows
+$ python -m globalbank.changes
+version 21: update_postimage 6,041, update_preimage 6,041
+  au-000c28d3f79f  update_postimage  SETTLED   15.23
+  au-000c28d3f79f  update_preimage   APPROVED  None
+  au-001b689d3eeb  update_postimage  SETTLED   80.17
+  au-001b689d3eeb  update_preimage   APPROVED  None

@@ -1,10 +1,11 @@
-"""The change data feed: what the last version did, row by row."""
+"""The change data feed: what the last MERGE did, row by row."""
 from globalbank.session import get_spark
 
 SILVER = 'globalbank_dev.silver.card_transactions'
 
 spark = get_spark()
-last = spark.sql(f'DESCRIBE HISTORY {SILVER} LIMIT 1').first().version
+last = spark.sql(f'DESCRIBE HISTORY {SILVER}') \
+    .where("operation = 'MERGE'").agg({'version': 'max'}).first()[0]
 changes = spark.sql(f"SELECT * FROM table_changes('{SILVER}', {last})")
 counts = changes.groupBy('_change_type').count().orderBy('_change_type')
 print(f'version {last}:',

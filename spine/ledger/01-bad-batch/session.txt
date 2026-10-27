@@ -1,0 +1,8 @@
+$ python -m globalbank.ledger post 2026-10-14
+globalbank_dev.silver.card_transactions: 29,500 rows
+$ python -m globalbank.daily
+2026-10-10   5,837 auths    333,191.79 EUR
+2026-10-11   5,849 auths    334,863.94 EUR
+2026-10-12   5,074 auths    285,995.61 EUR
+2026-10-13   5,090 auths    292,315.73 EUR
+2026-10-14   4,998 auths    788,470.24 EUR
