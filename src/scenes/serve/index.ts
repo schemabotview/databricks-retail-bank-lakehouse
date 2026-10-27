@@ -1,4 +1,5 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
+import { view } from '../fold'
 import { ideFrame, lineOf, linesFrom } from '../ide'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
@@ -73,7 +74,7 @@ const top2 = Math.ceil(Math.max(...days2) / 1000) * 1000
 const low2 = Math.min(0, Math.floor(Math.min(...days2) / 1000) * 1000)
 const balances2Scene: SceneModel = ideFrame({
   tree: tree(['sql/gold/daily_balances.sql', 'sql/gold/balance_of.sql', 'globalbank/warehouse.py'], 'sql/gold/daily_balances.sql', ['sql/gold/daily_balances.sql', 'sql/gold/balance_of.sql']),
-  editor: { file: 'sql/gold/daily_balances.sql', code: balances2, lang: 'sql', highlight: linesFrom(balances2, 'SELECT a.account_id, d.day,', 'PARTITION BY a.account_id ORDER BY d.day) AS balance') },
+  editor: { file: 'sql/gold/daily_balances.sql', code: balances2, lang: 'sql', ...view(balances2, 'CREATE OR REPLACE TABLE', 'LEFT JOIN daily m'), highlight: linesFrom(balances2, 'SELECT a.account_id, d.day,', 'PARTITION BY a.account_id ORDER BY d.day) AS balance') },
   session: s2,
   side: [
     {
@@ -94,7 +95,7 @@ const st3 = grid(outputOf(s3, `${WH} sql/gold/statement_of.sql account=A0000011`
 const made3 = grid(outputOf(s3, `${WH} sql/gold/monthly_statements.sql`))
 const statements3Scene: SceneModel = ideFrame({
   tree: tree(['sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql', 'sql/gold/statement_of.sql'], 'sql/gold/monthly_statements.sql', ['sql/gold/monthly_statements.sql', 'sql/gold/statement_of.sql']),
-  editor: { file: 'sql/gold/monthly_statements.sql', code: statements3, lang: 'sql', show: [[1, 3], [lineOf(statements3, 'core AS ('), lineOf(statements3, "WHERE b.day = DATE'2026-10-31'")]], highlight: linesFrom(statements3, "SELECT '2026-10' AS month", 'b.balance AS closing') },
+  editor: { file: 'sql/gold/monthly_statements.sql', code: statements3, lang: 'sql', ...view(statements3, 'core AS (', "WHERE b.day = DATE'2026-10-31'"), highlight: linesFrom(statements3, "SELECT '2026-10' AS month", 'b.balance AS closing') },
   session: s3,
   side: [
     {
@@ -119,8 +120,8 @@ const asof4Scene: SceneModel = ideFrame({
   session: s4,
   side: [
     {
-      type: 'table', id: 'two', title: 'Card book, 29–31 October: cleared EUR', tone: 'serve', columns: ['day', `${heads4[0].label} (v${heads4[0].v})`, `${heads4[1].label} (v${heads4[1].v})`],
-      rows: parts4[0].rows.map((r, i) => ({ id: `d-${r[0]}`, cells: [r[0], r[3], parts4[1].rows[i][3]], tone: r[3] !== parts4[1].rows[i][3] ? 'serve' as const : undefined })),
+      type: 'table', id: 'two', title: 'Card book, 28–31 October: cleared EUR', tone: 'serve', columns: ['day', `${heads4[0].label} (v${heads4[0].v})`, `${heads4[1].label} (v${heads4[1].v})`],
+      rows: parts4[0].rows.map((r, i) => ({ id: `d-${r[0]}`, cells: [r[0], r[3] === 'None' ? 'nothing yet' : r[3], parts4[1].rows[i][3]], tone: r[3] !== parts4[1].rows[i][3] ? 'serve' as const : undefined })),
     },
     {
       type: 'group', id: 'why', title: 'Why the numbers moved', icon: 'clock', tone: 'serve', ...FILL, children: [
@@ -144,7 +145,7 @@ const bars = (g: ReturnType<typeof grid>, col: number) => g.rows.map((r, i) => [
 const ceil = (g: ReturnType<typeof grid>, col: number, step: number) => Math.ceil(Math.max(...g.rows.map((r) => num(r[col]))) / step) * step
 const dashboard5Scene: SceneModel = ideFrame({
   tree: tree(['dashboards/statements.lvdash.json', 'globalbank/dashboard.py'], 'globalbank/dashboard.py', ['dashboards/statements.lvdash.json', 'globalbank/dashboard.py']),
-  editor: { file: 'globalbank/dashboard.py', code: dashboard5, highlight: linesFrom(dashboard5, 'w.lakeview.publish', 'show(*run(w, ') },
+  editor: { file: 'globalbank/dashboard.py', code: dashboard5, ...view(dashboard5, 'w.lakeview.publish'), highlight: linesFrom(dashboard5, 'w.lakeview.publish', 'show(*run(w, ') },
   session: s5,
   side: [
     {
@@ -166,7 +167,7 @@ const q6 = grid(outputOf(s6, `${WH} sql/alerts/overdrawn.sql`))
 const made6 = outputOf(s6, 'python -m globalbank.alert').split('\n')
 const alerts6Scene: SceneModel = ideFrame({
   tree: tree(['sql/alerts/overdrawn.sql', 'globalbank/alert.py', 'globalbank/warehouse.py'], 'globalbank/alert.py', ['sql/alerts/overdrawn.sql', 'globalbank/alert.py']),
-  editor: { file: 'globalbank/alert.py', code: alert6, highlight: linesFrom(alert6, 'evaluation=sql.AlertV2Evaluation(', "timezone_id='Europe/Amsterdam'))") },
+  editor: { file: 'globalbank/alert.py', code: alert6, ...view(alert6, 'evaluation=sql.AlertV2Evaluation('), highlight: linesFrom(alert6, 'evaluation=sql.AlertV2Evaluation(', "timezone_id='Europe/Amsterdam'))") },
   session: s6,
   side: [
     {
