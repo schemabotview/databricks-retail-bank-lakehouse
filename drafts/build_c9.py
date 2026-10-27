@@ -266,7 +266,7 @@ q = lambda c: c + ' > /dev/null'
 DAYS = ['bash land.sh 2026-09-12 > /dev/null', 'bash land.sh 2026-09-26 > /dev/null',
         'bash land.sh 2026-10-22 > /dev/null']
 SMALL = ['bash land.sh 2026-09-01 core_cdc 2026-09-02 > /dev/null', 'bash land.sh 2026-09-02 settlements > /dev/null',
-         'bash land.sh 2026-09-01 postings > /dev/null', 'bash land.sh 2026-09-01 chargebacks > /dev/null']
+         'bash land.sh 2026-09-01 postings > /dev/null', 'bash land.sh 2026-10-01 chargebacks > /dev/null']
 PIPE = [q('python -m globalbank.deploy'), q('python -m globalbank.run')]
 BASE = [RESET, CAT] + DAYS + SMALL + PIPE
 FEAT = BASE + [q('python -m globalbank.features')]

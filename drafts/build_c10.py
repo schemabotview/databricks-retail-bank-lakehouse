@@ -249,7 +249,7 @@ SELECT month, accounts, deposits_eur FROM globalbank_dev.gold.month_end
 q = lambda c: c + ' > /dev/null'
 J = 'python -m globalbank.job'
 LAND = [RESET, CAT, 'bash land.sh 2026-10-31 > /dev/null', 'bash land.sh 2026-09-01 core_cdc 2026-10-31 > /dev/null',
-        'bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null', 'bash land.sh 2026-09-01 chargebacks > /dev/null']
+        'bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null', 'bash land.sh 2026-10-01 chargebacks > /dev/null']
 SETTLED = ['bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null']
 UP = [q('python -m globalbank.deploy')]
 BASE = LAND + SETTLED + UP

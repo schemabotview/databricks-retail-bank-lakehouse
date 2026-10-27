@@ -11,7 +11,7 @@
   "bash land.sh 2026-10-22 > /dev/null",
   "bash land.sh 2026-09-01 core_cdc 2026-10-31 > /dev/null",
   "bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null",
-  "bash land.sh 2026-09-01 chargebacks > /dev/null",
+  "bash land.sh 2026-10-01 chargebacks > /dev/null",
   "bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null",
   "python -m globalbank.deploy > /dev/null",
   "python -m globalbank.job deploy > /dev/null"

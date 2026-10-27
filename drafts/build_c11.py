@@ -192,7 +192,7 @@ jobs:
 
 q = lambda c: c + ' > /dev/null'
 LAND = [RESET, CAT, 'bash land.sh 2026-10-22 > /dev/null', 'bash land.sh 2026-09-01 core_cdc 2026-10-31 > /dev/null',
-        'bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null', 'bash land.sh 2026-09-01 chargebacks > /dev/null',
+        'bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null', 'bash land.sh 2026-10-01 chargebacks > /dev/null',
         'bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null']
 B = 'databricks bundle'
 TESTENV = ['python -m venv .venv-test', '.venv-test/bin/pip install -q pyspark==4.2.0 pytest==8.4.2']
