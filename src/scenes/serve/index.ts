@@ -23,7 +23,6 @@ import s7 from '../../../spine/serve/07-slow-query/session.txt?raw'
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
 const num = (s: string) => Number(s.replace(/,/g, ''))
-const fmt = (n: number) => n.toLocaleString('en', { maximumFractionDigits: 2 })
 const FILL = { spread: true, minH: 520 } as const
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
