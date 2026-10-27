@@ -4,12 +4,10 @@
    "name": "by_region",
    "displayName": "October card spend by region",
    "queryLines": [
-    "SELECT c.region, round(sum(s.amount_eur)) AS card_eur\n",
-    "FROM globalbank_dev.silver.settlements s\n",
-    "JOIN globalbank_dev.silver.accounts a\n",
-    "  ON s.card_id = 'K' || substr(a.account_id, 2, 6) AND a.product = 'current'\n",
-    "JOIN globalbank_dev.silver.customers c USING (customer_id)\n",
-    "WHERE s.kind = 'SETTLEMENT' AND s.cleared_date >= DATE'2026-10-01'\n",
+    "SELECT a.region, round(sum(m.cards)) AS card_eur\n",
+    "FROM globalbank_dev.gold.monthly_statements m\n",
+    "JOIN globalbank_dev.gold.accounts a USING (account_id)\n",
+    "WHERE a.product = 'current'\n",
     "GROUP BY ALL ORDER BY region"
    ]
   },
@@ -17,11 +15,10 @@
    "name": "by_segment",
    "displayName": "Closing balance by segment",
    "queryLines": [
-    "SELECT c.segment, count(*) AS accounts,\n",
+    "SELECT a.segment, count(*) AS accounts,\n",
     "       round(avg(m.closing)) AS avg_closing_eur\n",
     "FROM globalbank_dev.gold.monthly_statements m\n",
-    "JOIN globalbank_dev.silver.accounts a USING (account_id)\n",
-    "JOIN globalbank_dev.silver.customers c USING (customer_id)\n",
+    "JOIN globalbank_dev.gold.accounts a USING (account_id)\n",
     "WHERE a.product = 'current'\n",
     "GROUP BY ALL ORDER BY avg_closing_eur"
    ]

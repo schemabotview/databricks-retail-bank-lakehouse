@@ -5,7 +5,7 @@ from pathlib import Path
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.dashboards import Dashboard
 
-from globalbank.warehouse import run, show, warehouse
+from globalbank.warehouse import run, warehouse
 
 NAME = 'globalbank statements'
 
@@ -22,6 +22,7 @@ else:
     found = [w.lakeview.create(board)]
 w.lakeview.publish(found[0].dashboard_id, warehouse_id=warehouse(w).id)
 print(f'{NAME}: published, {len(json.loads(spec)["datasets"])} datasets')
-for dataset in json.loads(spec)['datasets']:
-    print(f"-- {dataset['displayName']}")
-    show(*run(w, ''.join(dataset['queryLines'])))
+for dataset in json.loads(spec)['datasets']:  # each one, as its chart sees it
+    columns, rows = run(w, ''.join(dataset['queryLines']))
+    print(f"-- {dataset['displayName']} ({', '.join(columns)})")
+    print(' · '.join(' '.join(map(str, r)) for r in rows))

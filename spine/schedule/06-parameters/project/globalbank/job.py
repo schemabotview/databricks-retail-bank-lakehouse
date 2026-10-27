@@ -12,7 +12,7 @@ from globalbank.deploy import NAME as PIPELINE
 from globalbank.warehouse import warehouse
 
 NAME = 'globalbank_nightly'
-FILES = ['sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql',
+FILES = ['sql/gold/accounts.sql', 'sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql',
          'sql/gold/month_end.sql', 'sql/fraud/flags.sql', 'jobs/check.py']
 
 

@@ -22,23 +22,35 @@ TASKS = """      tasks:
         - task_key: pipeline
           pipeline_task:
             pipeline_id: ${resources.pipelines.globalbank_pipeline.id}
+        - task_key: accounts
+          depends_on: [{task_key: pipeline}]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: "${workspace.file_path}/sql/gold/accounts.sql"
         - task_key: balances
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/gold/daily_balances.sql"}
+            file:
+              path: "${workspace.file_path}/sql/gold/daily_balances.sql"
         - task_key: statements
           depends_on: [{task_key: balances}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/gold/monthly_statements.sql"}
+            file:
+              path: "${workspace.file_path}/sql/gold/monthly_statements.sql"
         - task_key: flags
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/fraud/flags.sql"}
+            file:
+              path: "${workspace.file_path}/sql/fraud/flags.sql"
         - task_key: check
-          depends_on: [{task_key: statements}, {task_key: flags}]
+          depends_on:
+            - {task_key: accounts}
+            - {task_key: statements}
+            - {task_key: flags}
           environment_key: default
           spark_python_task:
             python_file: ${workspace.file_path}/jobs/check.py
@@ -49,7 +61,8 @@ MONTH_END_TASK = """        - task_key: month_end
           depends_on: [{task_key: check}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/gold/month_end.sql"}
+            file:
+              path: "${workspace.file_path}/sql/gold/month_end.sql"
 """
 
 MONTH_END_PARAMS = """            parameters: {month: "{{tasks.check.values.month}}"}
@@ -126,7 +139,7 @@ from globalbank.deploy import NAME as PIPELINE
 from globalbank.warehouse import warehouse
 
 NAME = 'globalbank_nightly'
-FILES = ['sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql',
+FILES = ['sql/gold/accounts.sql', 'sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql',
          'sql/gold/month_end.sql', 'sql/fraud/flags.sql', 'jobs/check.py']
 
 

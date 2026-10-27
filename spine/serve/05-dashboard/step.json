@@ -1,6 +1,7 @@
 {
  "from": "serve/04-as-of",
  "changes": [
+  "sql/gold/accounts.sql",
   "dashboards/statements.lvdash.json",
   "globalbank/dashboard.py"
  ],

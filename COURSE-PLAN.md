@@ -197,6 +197,7 @@ Course 9).
 | `card_transactions_quarantine` | silver | 7 |
 | `daily_balances`, `monthly_statements`, `card_spend_daily` | gold | 7, 8 |
 | `regulatory_snapshot` | gold | 8 |
+| `accounts` (product, overdraft limit, region, segment: what consumers group and filter by) | gold | 8 |
 | `fraud_flags` | gold | 9 |
 
 The layers also organise governance and operations: grants follow them (engineers bronze and
@@ -324,7 +325,7 @@ notification are the workspace's; the frame shows its query's real result).)
 | 2 | Daily balances | a running balance per account: opening + postings − cleared card payments | plot: one account's October balance |
 | 3 | The monthly statement | October statement per account | the statement, as a table |
 | 4 | The regulator's question | the report for 29–31 October, written on 31 October, then late clearing files (1–3 November) land: `TIMESTAMP AS OF` the first write | one date, two answers |
-| 5 | A dashboard | `statements.lvdash.json`, drawn from its datasets' results | plot: spend by category, by region |
+| 5 | A dashboard | `gold.accounts` (consumers read only gold), then `statements.lvdash.json`, drawn from its datasets' results | plots: card spend by region, closing balance by segment |
 | 6 | Alerts | overdrafts above a threshold → notify | rule → condition → notification |
 | 7 | Why a query is slow | query history: files read, bytes pruned | plot: files read per query |
 
@@ -351,9 +352,9 @@ workspace's.)
 **10. `schedule` · Run it every night · 7**
 
 (2026-10-27: the job is written as a bundle resource, `resources/nightly.yml`, deployed by
-`globalbank/job.py` until Course 11's bundle takes the same file. Tasks: the pipeline → balances →
+`globalbank/job.py` until Course 11's bundle takes the same file. Tasks: the pipeline → `gold.accounts`, and balances →
 statements, and the fraud rule, both SQL on the warehouse → a Python check on serverless job
-compute (task values) → month-end figures. Widest point: 2 tasks. The fraud flags are the rule's;
+compute (task values) → month-end figures. Widest point: 3 tasks (`gold.accounts`, balances, the fraud rule). The fraud flags are the rule's;
 the model stays a laptop step (9.7). The failure in 10.4 is a missing clearing file.)
 
 | # | Section | Step | Side pane |

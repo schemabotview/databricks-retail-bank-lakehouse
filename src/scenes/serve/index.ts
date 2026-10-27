@@ -137,28 +137,33 @@ const asof4Scene: SceneModel = ideFrame({
   ],
 })
 
-// §5 — a dashboard, drawn from its datasets' results.
+// §5 — gold.accounts, then a dashboard drawn from its datasets' results (each printed on one line).
+const acc5 = grid(outputOf(s5, `${WH} sql/gold/accounts.sql`))
 const out5 = outputOf(s5, 'python -m globalbank.dashboard')
-const sets5 = out5.split(/^-- .*$/m).slice(1).map((p) => grid(p))
-const names5 = all(out5, /^-- (.*)$/gm).map((m) => m[1])
-const bars = (g: ReturnType<typeof grid>, col: number) => g.rows.map((r, i) => [i, num(r[col])] as [number, number])
-const ceil = (g: ReturnType<typeof grid>, col: number, step: number) => Math.ceil(Math.max(...g.rows.map((r) => num(r[col]))) / step) * step
+const sets5 = all(out5, /^-- (.*) \((.*)\)\n(.*)$/gm).map((m) => ({ name: m[1], rows: m[3].split(' · ').map((r) => r.split(' ')) }))
+const bars = (rows: string[][], col: number) => rows.map((r, i) => [i, num(r[col])] as [number, number])
+const ceil = (rows: string[][], col: number, step: number) => Math.ceil(Math.max(...rows.map((r) => num(r[col]))) / step) * step
+const [region5, segment5] = sets5
 const dashboard5Scene: SceneModel = ideFrame({
-  tree: tree(['dashboards/statements.lvdash.json', 'globalbank/dashboard.py'], 'globalbank/dashboard.py', ['dashboards/statements.lvdash.json', 'globalbank/dashboard.py']),
-  editor: { file: 'globalbank/dashboard.py', code: dashboard5, ...view(dashboard5, 'w.lakeview.publish'), highlight: linesFrom(dashboard5, 'w.lakeview.publish', 'show(*run(w, ') },
+  tree: tree(['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json', 'globalbank/dashboard.py'], 'globalbank/dashboard.py', ['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json', 'globalbank/dashboard.py']),
+  editor: { file: 'globalbank/dashboard.py', code: dashboard5, ...view(dashboard5, 'w.lakeview.publish'), highlight: linesFrom(dashboard5, 'w.lakeview.publish', "print(' · '.join(") },
   session: s5,
   side: [
     {
-      type: 'plot', id: 'region', compact: true, title: names5[0],
-      x: { labels: sets5[0].rows.map((r) => r[0]) }, y: { min: 0, max: ceil(sets5[0], 1, 50000), step: ceil(sets5[0], 1, 50000) / 4 },
-      series: [{ kind: 'bar', points: bars(sets5[0], 1), tone: 'serve' }],
+      type: 'table', id: 'accounts', title: 'gold.accounts: what the charts group by', tone: 'store', columns: acc5.columns,
+      rows: acc5.rows.map((r, i) => ({ id: `a-${i}`, cells: r })),
     },
     {
-      type: 'plot', id: 'segment', compact: true, title: names5[1],
-      x: { labels: sets5[1].rows.map((r) => r[0]) }, y: { min: 0, max: ceil(sets5[1], 2, 1000), step: ceil(sets5[1], 2, 1000) / 4 },
-      series: [{ kind: 'bar', points: bars(sets5[1], 2), tone: 'store' }],
+      type: 'plot', id: 'region', compact: true, title: `${region5.name}, EUR`,
+      x: { labels: region5.rows.map((r) => r[0]) }, y: { min: 0, max: ceil(region5.rows, 1, 500000), step: ceil(region5.rows, 1, 500000) / 4 },
+      series: [{ kind: 'bar', points: bars(region5.rows, 1), tone: 'serve' }],
     },
-    { type: 'note', id: 'note', tone: 'serve', text: 'Drawn from the dashboard’s own datasets, run on the warehouse: the published dashboard shows these numbers. Its page in the workspace is never screenshotted.' },
+    {
+      type: 'plot', id: 'segment', compact: true, title: `${segment5.name}: average EUR`,
+      x: { labels: segment5.rows.map((r) => `${r[0]} (${r[1]})`) }, y: { min: 0, max: ceil(segment5.rows, 2, 5000), step: ceil(segment5.rows, 2, 5000) / 4 },
+      series: [{ kind: 'bar', points: bars(segment5.rows, 2), tone: 'store' }],
+    },
+    { type: 'note', id: 'note', tone: 'serve', text: 'Both datasets read gold only: monthly_statements joined to gold.accounts. Drawn from the datasets’ own results on the warehouse; the dashboard’s page is never screenshotted.' },
   ],
 })
 

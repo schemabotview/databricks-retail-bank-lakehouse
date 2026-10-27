@@ -263,7 +263,7 @@ from pathlib import Path
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.dashboards import Dashboard
 
-from globalbank.warehouse import run, show, warehouse
+from globalbank.warehouse import run, warehouse
 
 NAME = 'globalbank statements'
 
@@ -280,25 +280,23 @@ else:
     found = [w.lakeview.create(board)]
 w.lakeview.publish(found[0].dashboard_id, warehouse_id=warehouse(w).id)
 print(f'{NAME}: published, {len(json.loads(spec)["datasets"])} datasets')
-for dataset in json.loads(spec)['datasets']:
-    print(f"-- {dataset['displayName']}")
-    show(*run(w, ''.join(dataset['queryLines'])))
+for dataset in json.loads(spec)['datasets']:  # each one, as its chart sees it
+    columns, rows = run(w, ''.join(dataset['queryLines']))
+    print(f"-- {dataset['displayName']} ({', '.join(columns)})")
+    print(' · '.join(' '.join(map(str, r)) for r in rows))
 '''
 
 
 def lvdash():
-    by_region = ['SELECT c.region, round(sum(s.amount_eur)) AS card_eur\n',
-                 'FROM globalbank_dev.silver.settlements s\n',
-                 'JOIN globalbank_dev.silver.accounts a\n',
-                 "  ON s.card_id = 'K' || substr(a.account_id, 2, 6) AND a.product = 'current'\n",
-                 'JOIN globalbank_dev.silver.customers c USING (customer_id)\n',
-                 "WHERE s.kind = 'SETTLEMENT' AND s.cleared_date >= DATE'2026-10-01'\n",
+    by_region = ['SELECT a.region, round(sum(m.cards)) AS card_eur\n',
+                 'FROM globalbank_dev.gold.monthly_statements m\n',
+                 'JOIN globalbank_dev.gold.accounts a USING (account_id)\n',
+                 "WHERE a.product = 'current'\n",
                  'GROUP BY ALL ORDER BY region']
-    by_segment = ['SELECT c.segment, count(*) AS accounts,\n',
+    by_segment = ['SELECT a.segment, count(*) AS accounts,\n',
                   '       round(avg(m.closing)) AS avg_closing_eur\n',
                   'FROM globalbank_dev.gold.monthly_statements m\n',
-                  'JOIN globalbank_dev.silver.accounts a USING (account_id)\n',
-                  'JOIN globalbank_dev.silver.customers c USING (customer_id)\n',
+                  'JOIN globalbank_dev.gold.accounts a USING (account_id)\n',
                   "WHERE a.product = 'current'\n",
                   'GROUP BY ALL ORDER BY avg_closing_eur']
 
@@ -322,10 +320,21 @@ def lvdash():
     }, indent=1) + '\n'
 
 
+ACCOUNTS = """-- Gold: the account facts consumers group and filter by, one row per account.
+CREATE OR REPLACE TABLE globalbank_dev.gold.accounts AS
+SELECT a.account_id, a.product, a.overdraft_limit, c.region, c.segment
+FROM globalbank_dev.silver.accounts a
+JOIN globalbank_dev.silver.customers c USING (customer_id);
+
+SELECT count(*) AS accounts, count_if(product = 'current') AS current,
+       count(DISTINCT region) AS regions, count(DISTINCT segment) AS segments
+FROM globalbank_dev.gold.accounts
+"""
+
 OVERDRAWN = """-- Accounts below their overdraft limit at the end of a day: an alert's query.
 SELECT b.day, count(*) AS accounts, round(min(b.balance)) AS lowest_eur
 FROM globalbank_dev.gold.daily_balances b
-JOIN globalbank_dev.silver.accounts a USING (account_id)
+JOIN globalbank_dev.gold.accounts a USING (account_id)
 WHERE b.balance < -a.overdraft_limit AND b.day >= DATE'2026-10-25'
 GROUP BY ALL ORDER BY b.day
 """
@@ -417,12 +426,14 @@ step(P, '04-as-of', f'{P}/03-statements', ['sql/gold/regulatory_snapshot.sql', '
       q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'python -m globalbank.asof'],
      BUILT + [q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'sleep 5'],
      extra={'mask': [r'written \d{4}-\d{2}-\d{2} \d{2}:\d{2}']})
-step(P, '05-dashboard', f'{P}/04-as-of', ['dashboards/statements.lvdash.json', 'globalbank/dashboard.py'],
-     {'dashboards/statements.lvdash.json': lvdash(), 'globalbank/dashboard.py': DASHBOARD},
-     ['python -m globalbank.dashboard'], STATED)
+step(P, '05-dashboard', f'{P}/04-as-of', ['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json',
+                                           'globalbank/dashboard.py'],
+     {'sql/gold/accounts.sql': ACCOUNTS, 'dashboards/statements.lvdash.json': lvdash(),
+      'globalbank/dashboard.py': DASHBOARD},
+     [f'{WH} sql/gold/accounts.sql', 'python -m globalbank.dashboard'], STATED)
 step(P, '06-alerts', f'{P}/05-dashboard', ['sql/alerts/overdrawn.sql', 'globalbank/alert.py'],
      {'sql/alerts/overdrawn.sql': OVERDRAWN, 'globalbank/alert.py': ALERT},
-     [f'{WH} sql/alerts/overdrawn.sql', 'python -m globalbank.alert'], BUILT)
+     [f'{WH} sql/alerts/overdrawn.sql', 'python -m globalbank.alert'], BUILT + [q(f'{WH} sql/gold/accounts.sql')])
 step(P, '07-slow-query', f'{P}/06-alerts', ['sql/gold/point.sql', 'globalbank/slow.py'],
      {'sql/gold/point.sql': POINT, 'globalbank/slow.py': SLOW},
      [f'{WH} sql/gold/point.sql', 'python -m globalbank.slow'], STATED + ['sleep 60'],

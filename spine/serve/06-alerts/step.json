@@ -15,6 +15,7 @@
   "bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null",
   "python -m globalbank.deploy > /dev/null",
   "python -m globalbank.run > /dev/null",
-  "python -m globalbank.warehouse sql/gold/daily_balances.sql > /dev/null"
+  "python -m globalbank.warehouse sql/gold/daily_balances.sql > /dev/null",
+  "python -m globalbank.warehouse sql/gold/accounts.sql > /dev/null"
  ]
 }

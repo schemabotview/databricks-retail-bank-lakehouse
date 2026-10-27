@@ -16,23 +16,35 @@ resources:
         - task_key: pipeline
           pipeline_task:
             pipeline_id: ${resources.pipelines.globalbank_pipeline.id}
+        - task_key: accounts
+          depends_on: [{task_key: pipeline}]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file:
+              path: "${workspace.file_path}/sql/gold/accounts.sql"
         - task_key: balances
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/gold/daily_balances.sql"}
+            file:
+              path: "${workspace.file_path}/sql/gold/daily_balances.sql"
         - task_key: statements
           depends_on: [{task_key: balances}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/gold/monthly_statements.sql"}
+            file:
+              path: "${workspace.file_path}/sql/gold/monthly_statements.sql"
         - task_key: flags
           depends_on: [{task_key: pipeline}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/fraud/flags.sql"}
+            file:
+              path: "${workspace.file_path}/sql/fraud/flags.sql"
         - task_key: check
-          depends_on: [{task_key: statements}, {task_key: flags}]
+          depends_on:
+            - {task_key: accounts}
+            - {task_key: statements}
+            - {task_key: flags}
           environment_key: default
           spark_python_task:
             python_file: ${workspace.file_path}/jobs/check.py
@@ -41,5 +53,6 @@ resources:
           depends_on: [{task_key: check}]
           sql_task:
             warehouse_id: ${var.warehouse_id}
-            file: {path: "${workspace.file_path}/sql/gold/month_end.sql"}
+            file:
+              path: "${workspace.file_path}/sql/gold/month_end.sql"
             parameters: {month: "{{tasks.check.values.month}}"}
