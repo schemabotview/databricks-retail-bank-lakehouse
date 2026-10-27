@@ -23,7 +23,7 @@ const PKG = ['globalbank/__init__.py', 'globalbank/session.py']
 const VENV = ['.venv/']
 const LANDED = ['.venv/', 'landing/']
 // A side pane's main diagram stretches to fill its column (check-render: content spans ≥ 2/3).
-const FILL = { spread: true, minH: 560 } as const
+const FILL = { spread: true, minH: 520 } as const  // with the side pane's own spread (ide.ts)
 
 // §1 — the CLI, and how it finds the workspace.
 const cliVersion = outputOf(s1, 'databricks --version').replace('Databricks CLI ', '')
@@ -35,7 +35,7 @@ const startCli: SceneModel = ideFrame({
   session: s1,
   side: [
     {
-      type: 'group', id: 'path', title: 'One command, end to end', icon: 'terminal', tone: 'ingest', ...FILL, minH: 620, children: [
+      type: 'group', id: 'path', title: 'One command, end to end', icon: 'terminal', tone: 'ingest', ...FILL, children: [
         { type: 'item', id: 'p-env', title: 'DATABRICKS_HOST, _TOKEN', sub: 'the environment: who and where', icon: 'key' },
         { type: 'item', id: 'p-cli', title: `Databricks CLI ${cliVersion}`, sub: 'one Go binary on the laptop', icon: 'terminal' },
         { type: 'item', id: 'p-api', title: 'the workspace REST API', sub: 'HTTPS, one call per command', icon: 'globe' },
@@ -171,7 +171,7 @@ const startCatalog: SceneModel = ideFrame({
   session: s4,
   side: [
     {
-      type: 'group', id: 'tree', title: 'globalbank_dev', sub: 'a catalog: the top of a three-part name', icon: 'database', tone: 'ingest', ...FILL, minH: 680, children: [
+      type: 'group', id: 'tree', title: 'globalbank_dev', sub: 'a catalog: the top of a three-part name', icon: 'database', tone: 'ingest', ...FILL, children: [
         {
           type: 'table', id: 'schemas', title: 'its schemas', columns: ['schema', 'holds'],
           rows: schemas.map((s) => ({
@@ -205,7 +205,7 @@ const startLand: SceneModel = ideFrame({
   session: s5,
   side: [
     {
-      type: 'group', id: 'trip', title: 'One day, landed', icon: 'card', tone: 'source', ...FILL, minH: 600, children: [
+      type: 'group', id: 'trip', title: 'One day, landed', icon: 'card', tone: 'source', ...FILL, children: [
         { type: 'item', id: 't-gen', title: 'globalbank_sim', sub: 'the card processor, simulated', icon: 'factory' },
         { type: 'item', id: 't-local', title: 'landing/', sub: `${local} files on the laptop`, icon: 'folder' },
         { type: 'item', id: 't-vol', title: 'the card_auths volume', sub: `${remote} files, in a folder per day`, icon: 'cloud' },

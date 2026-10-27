@@ -39,7 +39,7 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | --- | --- | --- | --- |
 | 1 | `intro` | 4 | authored, replayed (lab), rendered, looked at; no audio |
 | 2 | `start` | 6 | pilot: authored, replayed on the workspace, rendered, looked at; no audio |
-| 3 | `land` | 8 | not started |
+| 3 | `land` | 8 | authored, replayed on the workspace, rendered, looked at; no audio |
 | 4 | `ledger` | 8 | not started |
 | 5 | `customers` | 7 | not started |
 | 6 | `protect` | 8 | not started |

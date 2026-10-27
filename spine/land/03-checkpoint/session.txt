@@ -1,0 +1,11 @@
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 11,132 + 0 = 11,132 rows
+$ databricks fs ls dbfs:/Volumes/globalbank_dev/bronze/checkpoints/card_auths
+_schemas
+commits
+metadata
+offsets
+sources
+$ databricks fs rm -r dbfs:/Volumes/globalbank_dev/bronze/checkpoints/card_auths
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 11,132 + 11,132 = 22,264 rows

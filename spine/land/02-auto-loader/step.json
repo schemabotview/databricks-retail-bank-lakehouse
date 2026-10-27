@@ -1,0 +1,17 @@
+{
+ "from": "land/01-reread",
+ "workspace": true,
+ "venv": true,
+ "changes": [
+  "globalbank/land.py",
+  "globalbank/columns.py",
+  "globalbank/catalog.py",
+  "globalbank/first_table.py"
+ ],
+ "setup": [
+  "databricks catalogs delete globalbank_dev --force 2>/dev/null || true",
+  "python -m globalbank.catalog",
+  "bash land.sh 2026-10-01 > /dev/null",
+  "bash land.sh 2026-10-02 > /dev/null"
+ ]
+}

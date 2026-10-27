@@ -1,0 +1,11 @@
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 0 + 5,569 = 5,569 rows
+$ python -m globalbank.sources
++---------------+-------------------+-----+
+|file           |landed_at          |count|
++---------------+-------------------+-----+
+|auths-1515.json|2026-10-27 09:43:23|151  |
+|auths-1600.json|2026-10-27 09:43:23|151  |
+|auths-1445.json|2026-10-27 09:43:23|141  |
++---------------+-------------------+-----+
+only showing top 3 rows

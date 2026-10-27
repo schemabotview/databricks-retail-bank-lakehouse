@@ -1,0 +1,15 @@
+{
+ "from": "land/05-schema-evolution",
+ "workspace": true,
+ "venv": true,
+ "changes": [
+  "globalbank/rescued.py"
+ ],
+ "setup": [
+  "databricks catalogs delete globalbank_dev --force 2>/dev/null || true",
+  "python -m globalbank.catalog",
+  "bash land.sh 2026-10-15 > /dev/null",
+  "python -m globalbank.land > /dev/null || true",
+  "python -m globalbank.land > /dev/null"
+ ]
+}

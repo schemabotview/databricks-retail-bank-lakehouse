@@ -1,0 +1,8 @@
+$ python -m globalbank.reconcile
+files in the volume      280
+files in bronze          280
+lines in the files    17,533
+rows in bronze        17,533
+distinct auth_id      17,475
+sent twice                58
+rescued                    0

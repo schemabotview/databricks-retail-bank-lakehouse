@@ -1,0 +1,9 @@
+$ bash land.sh 2026-10-15 | wc -l
+95
+$ python -m globalbank.land
+stream stopped: UNKNOWN_FIELD_EXCEPTION.NEW_FIELDS_IN_RECORD_WITH_FILE_PATH
+new column: wallet_type STRING
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 5,569 + 5,592 = 11,161 rows
+$ python -m globalbank.columns globalbank_dev.bronze.card_auths
+amount decimal(18,2)  auth_id string  auth_ts timestamp  card_id string  currency string  entry_mode string  mcc string  merchant_id string  status string  _rescued_data string  wallet_type string

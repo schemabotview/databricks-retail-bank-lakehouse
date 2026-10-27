@@ -1,0 +1,10 @@
+$ python -m globalbank.reread
+read 5,569 rows from 93 files
+$ bash land.sh 2026-10-02 | wc -l
+93
+$ python -m globalbank.reread
+read 11,132 rows from 186 files
+$ bash land.sh 2026-10-03 | wc -l
+94
+$ python -m globalbank.reread
+read 17,533 rows from 280 files

@@ -1,0 +1,12 @@
+$ bash land.sh 2026-10-20 | wc -l
+94
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 5,592 + 5,604 = 11,196 rows
+$ python -m globalbank.rescued
++---------------+------+-------+
+|        auth_id|amount|rescued|
++---------------+------+-------+
+|au-110603d6892c|  NULL|  67,78|
+|au-859319975e9e|  NULL|  17,66|
+|au-a7613c142f85|  NULL|  52,37|
++---------------+------+-------+

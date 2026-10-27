@@ -1,0 +1,13 @@
+{
+ "from": "start/06-first-table",
+ "workspace": true,
+ "venv": true,
+ "changes": [
+  "globalbank/reread.py"
+ ],
+ "setup": [
+  "databricks catalogs delete globalbank_dev --force 2>/dev/null || true",
+  "python -m globalbank.catalog",
+  "bash land.sh 2026-10-01 > /dev/null"
+ ]
+}

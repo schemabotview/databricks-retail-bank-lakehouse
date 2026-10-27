@@ -1,0 +1,4 @@
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 0 + 5,569 = 5,569 rows
+$ python -m globalbank.columns globalbank_dev.bronze.card_auths
+amount decimal(18,2)  auth_id string  auth_ts timestamp  card_id string  currency string  entry_mode string  mcc string  merchant_id string  status string  _rescued_data string

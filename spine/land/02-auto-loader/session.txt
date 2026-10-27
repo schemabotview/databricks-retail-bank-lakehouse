@@ -1,0 +1,8 @@
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 0 + 11,132 = 11,132 rows
+$ bash land.sh 2026-10-03 | wc -l
+94
+$ python -m globalbank.land
+globalbank_dev.bronze.card_auths: 11,132 + 6,401 = 17,533 rows
+$ python -m globalbank.columns globalbank_dev.bronze.card_auths
+amount string  auth_id string  auth_ts string  card_id string  currency string  entry_mode string  mcc string  merchant_id string  status string  _rescued_data string

@@ -103,7 +103,10 @@ export function ideFrame({ project = 'globalbank', tree, editor, session, side, 
     type: 'code', id: IDE_IDS.terminal, terminal: true, filename: `terminal — ${project}`, code: terminal(session),
     fill: true, w: EDITOR_W, minH: TERMINAL_H,
   }
-  const pane: Group = { type: 'group', id: IDE_IDS.side, bare: true, w: SIDE_W, minH: FRAME_H, children: side }
+  // The side pane SPREADS its diagrams over the frame's full height (graphl-flow's `spread`): a few
+  // cards at the top of an empty column was python-ct's v1 failure, and check-render holds the
+  // content to ≥ 2/3 of the pane.
+  const pane: Group = { type: 'group', id: IDE_IDS.side, bare: true, spread: true, w: SIDE_W, minH: FRAME_H, children: side }
   return {
     dir: 'row',
     nodes: [explorer, { type: 'group', id: 'workbench', bare: true, children: [code, term] }, pane],
