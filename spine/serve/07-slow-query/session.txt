@@ -1,0 +1,2 @@
+$ python -m globalbank.warehouse sql/gold/point.sql
+$ python -m globalbank.slow

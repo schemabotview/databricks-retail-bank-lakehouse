@@ -1,0 +1,25 @@
+{
+ "from": "serve/03-statements",
+ "changes": [
+  "sql/gold/regulatory_snapshot.sql",
+  "globalbank/asof.py"
+ ],
+ "workspace": true,
+ "venv": true,
+ "setup": [
+  "python \"$SPINE_REPO/scripts/ws_reset.py\"",
+  "python -m globalbank.catalog",
+  "bash land.sh 2026-10-29 card_auths 2026-10-31 > /dev/null",
+  "bash land.sh 2026-09-01 core_cdc 2026-10-31 > /dev/null",
+  "bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null",
+  "bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null",
+  "python -m globalbank.deploy > /dev/null",
+  "python -m globalbank.run > /dev/null",
+  "python -m globalbank.warehouse sql/gold/daily_balances.sql > /dev/null",
+  "python -m globalbank.warehouse sql/gold/regulatory_snapshot.sql > /dev/null",
+  "sleep 5"
+ ],
+ "mask": [
+  "written \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}"
+ ]
+}

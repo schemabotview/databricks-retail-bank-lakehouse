@@ -1,0 +1,2 @@
+$ python -m globalbank.warehouse sql/gold/daily_balances.sql
+$ python -m globalbank.warehouse sql/gold/balance_of.sql account=A0000011

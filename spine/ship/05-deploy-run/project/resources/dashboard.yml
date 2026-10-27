@@ -1,0 +1,7 @@
+# The statements dashboard (Course 8), deployed by the bundle.
+resources:
+  dashboards:
+    globalbank_statements:
+      display_name: globalbank statements
+      file_path: ../dashboards/statements.lvdash.json
+      warehouse_id: ${var.warehouse_id}

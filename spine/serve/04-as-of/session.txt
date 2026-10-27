@@ -1,0 +1,4 @@
+$ bash land.sh 2026-11-01 settlements 2026-11-03 | wc -l
+$ python -m globalbank.run | sed -n 1p
+$ python -m globalbank.warehouse sql/gold/regulatory_snapshot.sql > /dev/null
+$ python -m globalbank.asof

@@ -1,0 +1,3 @@
+$ python -m globalbank.files globalbank_dev.bronze.card_auths
+$ python -m globalbank.optimize globalbank_dev.bronze.card_auths
+$ python -m globalbank.files globalbank_dev.bronze.card_auths

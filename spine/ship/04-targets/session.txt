@@ -1,0 +1,2 @@
+$ databricks bundle validate -t dev | sed -n 1,5p
+$ databricks bundle validate -t prod | sed -n 1,5p

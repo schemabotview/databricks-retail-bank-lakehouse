@@ -1,0 +1,12 @@
+# The medallion pipeline (Course 7), deployed by the bundle.
+resources:
+  pipelines:
+    globalbank_pipeline:
+      name: globalbank_pipeline
+      serverless: true
+      catalog: globalbank_dev
+      schema: bronze
+      libraries:
+        - file: {path: ../pipelines/bronze.py}
+        - file: {path: ../pipelines/silver.py}
+        - file: {path: ../pipelines/gold.py}

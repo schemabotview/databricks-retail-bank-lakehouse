@@ -1,0 +1,13 @@
+$ python -m globalbank.run
+update COMPLETED
+  bronze.card_auths                      16,797 rows
+  bronze.core_cdc                        12,385 rows
+  gold.card_spend_daily                       5 rows  (complete_recompute)
+  silver.card_transactions               16,666 rows  (complete_recompute)
+  silver.card_transactions_quarantine        81 rows  (complete_recompute)
+$ python -m globalbank.recon
+bronze       16,797
+silver       16,666
+quarantine       81
+resends          50
+16,666 + 81 + 50 = 16,797 = 16,797

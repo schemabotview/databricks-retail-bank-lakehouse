@@ -1,0 +1,1 @@
+$ python -m globalbank.ring 2026-10-22

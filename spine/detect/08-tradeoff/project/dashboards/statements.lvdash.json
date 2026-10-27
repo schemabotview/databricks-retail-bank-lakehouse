@@ -1,0 +1,138 @@
+{
+ "datasets": [
+  {
+   "name": "by_region",
+   "displayName": "October card spend by region",
+   "queryLines": [
+    "SELECT c.region, round(sum(s.amount_eur)) AS card_eur\n",
+    "FROM globalbank_dev.silver.settlements s\n",
+    "JOIN globalbank_dev.silver.accounts a\n",
+    "  ON s.card_id = 'K' || substr(a.account_id, 2, 6) AND a.product = 'current'\n",
+    "JOIN globalbank_dev.silver.customers c USING (customer_id)\n",
+    "WHERE s.kind = 'SETTLEMENT' AND s.cleared_date >= DATE'2026-10-01'\n",
+    "GROUP BY ALL ORDER BY region"
+   ]
+  },
+  {
+   "name": "by_segment",
+   "displayName": "Closing balance by segment",
+   "queryLines": [
+    "SELECT c.segment, count(*) AS accounts,\n",
+    "       round(avg(m.closing)) AS avg_closing_eur\n",
+    "FROM globalbank_dev.gold.monthly_statements m\n",
+    "JOIN globalbank_dev.silver.accounts a USING (account_id)\n",
+    "JOIN globalbank_dev.silver.customers c USING (customer_id)\n",
+    "WHERE a.product = 'current'\n",
+    "GROUP BY ALL ORDER BY avg_closing_eur"
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "name": "october",
+   "displayName": "October",
+   "layout": [
+    {
+     "widget": {
+      "name": "spend",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "by_region",
+         "disaggregated": true,
+         "fields": [
+          {
+           "name": "region",
+           "expression": "`region`"
+          },
+          {
+           "name": "card_eur",
+           "expression": "`card_eur`"
+          }
+         ]
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "region",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "region"
+        },
+        "y": {
+         "fieldName": "card_eur",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "card_eur"
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 0,
+      "y": 0,
+      "width": 3,
+      "height": 6
+     }
+    },
+    {
+     "widget": {
+      "name": "balance",
+      "queries": [
+       {
+        "name": "main_query",
+        "query": {
+         "datasetName": "by_segment",
+         "disaggregated": true,
+         "fields": [
+          {
+           "name": "segment",
+           "expression": "`segment`"
+          },
+          {
+           "name": "avg_closing_eur",
+           "expression": "`avg_closing_eur`"
+          }
+         ]
+        }
+       }
+      ],
+      "spec": {
+       "version": 3,
+       "widgetType": "bar",
+       "encodings": {
+        "x": {
+         "fieldName": "segment",
+         "scale": {
+          "type": "categorical"
+         },
+         "displayName": "segment"
+        },
+        "y": {
+         "fieldName": "avg_closing_eur",
+         "scale": {
+          "type": "quantitative"
+         },
+         "displayName": "avg_closing_eur"
+        }
+       }
+      }
+     },
+     "position": {
+      "x": 3,
+      "y": 0,
+      "width": 3,
+      "height": 6
+     }
+    }
+   ]
+  }
+ ]
+}

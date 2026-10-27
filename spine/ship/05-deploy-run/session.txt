@@ -1,0 +1,2 @@
+$ databricks bundle deploy
+$ databricks bundle run globalbank_nightly | tail -1

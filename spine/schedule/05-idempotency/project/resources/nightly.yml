@@ -1,0 +1,44 @@
+# The nightly run, as a bundle resource: bronze and silver (the pipeline),
+# then gold on the SQL warehouse, then checks. Deployed by globalbank/job.py
+# until Course 11's bundle deploys it.
+resources:
+  jobs:
+    globalbank_nightly:
+      name: globalbank_nightly
+      parameters:
+        - {name: run_date, default: "2026-10-31"}
+      environments:
+        - environment_key: default
+          spec: {environment_version: "4"}
+      trigger:  # a new clearing file starts the run
+        file_arrival: {url: /Volumes/globalbank_dev/landing/settlements/}
+      tasks:
+        - task_key: pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.globalbank_pipeline.id}
+        - task_key: balances
+          depends_on: [{task_key: pipeline}]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: {path: ${workspace.file_path}/sql/gold/daily_balances.sql}
+        - task_key: statements
+          depends_on: [{task_key: balances}]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: {path: ${workspace.file_path}/sql/gold/monthly_statements.sql}
+        - task_key: flags
+          depends_on: [{task_key: pipeline}]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: {path: ${workspace.file_path}/sql/fraud/flags.sql}
+        - task_key: check
+          depends_on: [{task_key: statements}, {task_key: flags}]
+          environment_key: default
+          spark_python_task:
+            python_file: ${workspace.file_path}/jobs/check.py
+            parameters: ["{{job.parameters.run_date}}"]
+        - task_key: month_end
+          depends_on: [{task_key: check}]
+          sql_task:
+            warehouse_id: ${var.warehouse_id}
+            file: {path: ${workspace.file_path}/sql/gold/month_end.sql}

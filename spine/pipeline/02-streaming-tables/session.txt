@@ -1,0 +1,12 @@
+$ python -m globalbank.deploy
+globalbank_pipeline: created, 1 source file(s): bronze.py
+$ python -m globalbank.run
+update COMPLETED
+  bronze.card_auths                       5,569 rows
+  bronze.core_cdc                        11,996 rows
+$ bash land.sh 2026-10-02 | wc -l
+93
+$ python -m globalbank.run
+update COMPLETED
+  bronze.card_auths                      11,132 rows
+  bronze.core_cdc                        11,996 rows

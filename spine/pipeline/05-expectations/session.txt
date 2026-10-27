@@ -1,0 +1,12 @@
+$ python -m globalbank.deploy
+globalbank_pipeline: created, 3 source file(s): bronze.py, gold.py, silver.py
+$ python -m globalbank.run
+update COMPLETED
+  bronze.card_auths                      16,797 rows
+  bronze.core_cdc                        12,385 rows
+  gold.card_spend_daily                       5 rows  (complete_recompute)
+  silver.card_transactions               16,666 rows  (complete_recompute)
+$ python -m globalbank.quality
+amount_in_range    passed  16,666   failed   81
+amount_known       passed  16,744   failed    3
+currency_known     passed  16,747   failed    0

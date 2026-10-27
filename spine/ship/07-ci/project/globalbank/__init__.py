@@ -1,0 +1,1 @@
+"""Global Bank's lakehouse."""

@@ -1,0 +1,3 @@
+$ python -m globalbank.job run | sed -n 1p
+$ python -m globalbank.job run | sed -n 1p
+$ python -m globalbank.warehouse sql/gold/month_end_rows.sql

@@ -1,0 +1,4 @@
+databricks-connect==18.3.7
+mlflow-skinny[databricks]==3.17.2
+scikit-learn==1.9.1
+pandas==2.3.3

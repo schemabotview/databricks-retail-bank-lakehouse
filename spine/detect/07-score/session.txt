@@ -1,0 +1,1 @@
+$ python -m globalbank.score 2026-10-22 0.9

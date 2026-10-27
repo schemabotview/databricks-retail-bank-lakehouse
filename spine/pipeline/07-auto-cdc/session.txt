@@ -1,0 +1,11 @@
+$ python -m globalbank.run
+update COMPLETED
+  bronze.card_auths                      16,797 rows
+  bronze.core_cdc                        12,385 rows
+  gold.card_spend_daily                       5 rows  (complete_recompute)
+  silver.card_transactions               16,666 rows  (complete_recompute)
+  silver.card_transactions_quarantine        81 rows  (complete_recompute)
+  silver.customers                        5,084 rows
+  silver.customers_history                5,833 rows
+$ python -m globalbank.customer C000001 | tail -1
+silver now: seq 12155, 136 River View

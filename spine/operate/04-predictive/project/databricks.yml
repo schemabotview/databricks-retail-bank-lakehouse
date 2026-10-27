@@ -1,0 +1,24 @@
+# Global Bank's lakehouse, as one bundle: the code, the pipeline, the nightly
+# job and the dashboard, deployed together from the repo.
+bundle:
+  name: globalbank
+
+include:
+  - resources/*.yml
+
+sync:
+  exclude: [.venv, .venv-test, landing]
+
+variables:
+  warehouse_id:
+    lookup: {warehouse: Serverless Starter Warehouse}
+
+targets:
+  dev:
+    mode: development  # schedules and triggers paused
+    default: true
+    presets: {name_prefix: dev_}
+  prod:
+    mode: production
+    workspace:
+      root_path: /Workspace/Shared/.bundle/${bundle.name}/prod

@@ -1,0 +1,3 @@
+$ python -m globalbank.counts
+$ python -m globalbank.run --full-refresh | sed -n 1p
+$ python -m globalbank.counts

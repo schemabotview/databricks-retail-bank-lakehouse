@@ -1,0 +1,4 @@
+$ python -m globalbank.job run run_date=2026-10-31 | sed -n 1p
+$ python -m globalbank.job run run_date=2026-10-31 | sed -n 1p
+$ python -m globalbank.job output check
+$ python -m globalbank.warehouse sql/gold/month_end_rows.sql

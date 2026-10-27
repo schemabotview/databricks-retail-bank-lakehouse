@@ -1,0 +1,9 @@
+$ python -m globalbank.deploy
+globalbank_pipeline: created, 3 source file(s): bronze.py, gold.py, silver.py
+$ python -m globalbank.run | tail -2
+  gold.card_spend_daily                       2 rows  (complete_recompute)
+  silver.card_transactions                5,549 rows  (complete_recompute)
+$ bash land.sh 2026-10-02 > /dev/null
+$ python -m globalbank.run | tail -2
+  gold.card_spend_daily                       3 rows  (group_aggregate)
+  silver.card_transactions               11,099 rows  (window_function)

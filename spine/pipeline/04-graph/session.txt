@@ -1,0 +1,3 @@
+$ python -m globalbank.graph
+silver.card_transactions   -> gold.card_spend_daily
+bronze.card_auths          -> silver.card_transactions

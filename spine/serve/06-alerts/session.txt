@@ -1,0 +1,2 @@
+$ python -m globalbank.warehouse sql/alerts/overdrawn.sql
+$ python -m globalbank.alert

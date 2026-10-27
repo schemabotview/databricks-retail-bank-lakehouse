@@ -1,0 +1,2 @@
+$ python -m globalbank.job deploy | sed -n 1p
+$ python -m globalbank.job who

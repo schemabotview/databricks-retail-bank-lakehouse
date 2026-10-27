@@ -1,0 +1,8 @@
+$ bash nightly.sh 2026-10-02
+globalbank_dev.silver.card_transactions: 5,492 rows
+globalbank_dev.bronze.card_auths: 5,569 + 5,563 = 11,132 rows
+globalbank_dev.bronze.core_cdc: 11,996 + 19 = 12,015 rows
+customers <- 2026-10-02: 15 changes
+  inserted 3, updated 12, deleted 0; silver.customers: 5,049 rows
+$ python -m globalbank.ledger post 2026-10-02
+globalbank_dev.silver.card_transactions: 10,983 rows

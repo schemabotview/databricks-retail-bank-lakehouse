@@ -1,0 +1,3 @@
+$ python -m globalbank.job run
+$ bash land.sh 2026-10-31 settlements | wc -l
+$ python -m globalbank.job repair

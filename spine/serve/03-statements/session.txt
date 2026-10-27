@@ -1,0 +1,2 @@
+$ python -m globalbank.warehouse sql/gold/monthly_statements.sql
+$ python -m globalbank.warehouse sql/gold/statement_of.sql account=A0000011
