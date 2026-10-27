@@ -42,7 +42,7 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | 3 | `land` | 8 | authored, replayed on the workspace, rendered, looked at; no audio |
 | 4 | `ledger` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio |
 | 5 | `customers` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio (5.8 documented) |
-| 6 | `protect` | 8 | not started |
+| 6 | `protect` | 8 | authored, replayed, rendered, looked at; 6.3 and 6.8 re-replaying (shorter output); no audio |
 | 7 | `pipeline` | 9 | not started |
 | 8 | `serve` | 7 | not started |
 | 9 | `detect` | 8 | not started |

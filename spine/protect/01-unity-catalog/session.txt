@@ -1,0 +1,11 @@
+$ python -m globalbank.uc
+metastore: aws:us-east-2:11111111-1111-4111-8111-111111111111
+catalogs:  globalbank_dev
+owner:     ana@globalbank.example
+globalbank_dev:
+  landing     0 tables, 3 volumes
+  bronze      1 tables, 1 volumes
+  silver      2 tables, 0 volumes
+  gold        0 tables, 0 volumes
+  governance  0 tables, 0 volumes
+  vault       0 tables, 0 volumes

@@ -1,0 +1,8 @@
+$ python -m globalbank.govern governance/grants.sql
+no   GRANT USE CATALOG ON CATALOG globalbank_dev TO `engineers`
+no   GRANT USE SCHEMA, SELECT ON SCHEMA bronze TO `engineers`
+no   GRANT USE SCHEMA, SELECT ON SCHEMA silver TO `engineers`
+no   GRANT USE SCHEMA, SELECT ON SCHEMA silver TO `risk`
+no   GRANT USE SCHEMA, SELECT ON SCHEMA gold TO `finance`
+no   GRANT USE SCHEMA, SELECT ON SCHEMA gold TO `branches`
+0 applied, 6 refused: PRINCIPAL_DOES_NOT_EXIST

@@ -1,0 +1,11 @@
+$ python -m globalbank.govern governance/tags.sql | tail -1
+7 applied, 0 refused
+$ python -m globalbank.pii
+7 columns tagged pii in globalbank_dev:
+  silver.accounts.iban            account_number
+  silver.customers.address        contact
+  silver.customers.date_of_birth  birth_date
+  silver.customers.email          contact
+  silver.customers.first_name     name
+  silver.customers.last_name      name
+  silver.customers.national_id    national_id

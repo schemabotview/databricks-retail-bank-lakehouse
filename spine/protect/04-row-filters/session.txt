@@ -1,0 +1,12 @@
+$ python -m globalbank.govern governance/filters.sql
+ok   CREATE OR REPLACE FUNCTION governance.my_region( row_region STRING
+ok   ALTER TABLE silver.customers SET ROW FILTER governance.my_region O
+2 applied, 0 refused
+$ python -m globalbank.roles branch North
+ana@globalbank.example reads as branch, North
+$ python -m globalbank.regions
+North 990
+$ python -m globalbank.roles risk
+ana@globalbank.example reads as risk
+$ python -m globalbank.regions
+Central 1,054  East 990  North 990  South 1,014  West 1,064

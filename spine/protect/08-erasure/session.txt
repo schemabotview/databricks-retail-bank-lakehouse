@@ -1,0 +1,11 @@
+$ python -m globalbank.vault
+globalbank_dev.vault.customer_pii: 5,112 customers
+$ python -m globalbank.erase
+request ER-2026-0031: erase C003767
+version 1: deleted 1 row(s), deletion vectors added 1
+  version 0 holds them: 1 row(s)
+  version 1 holds them: 0 row(s)
+silver.accounts still holds 1 account row(s) for C003767
+$ python -m globalbank.purge
+REORG ... PURGE: 1 file written, 1 removed from the table
+VACUUM: 0 files deleted now: the removed file goes once it is older than the 7-day retention

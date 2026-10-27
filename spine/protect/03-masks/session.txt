@@ -1,0 +1,10 @@
+$ python -m globalbank.govern governance/masks.sql | tail -1
+4 applied, 0 refused
+$ python -m globalbank.peek
+C000001  national_id *****71H     iban *****101
+C000002  national_id *****09D     iban *****201
+$ python -m globalbank.roles risk
+ana@globalbank.example reads as risk
+$ python -m globalbank.peek
+C000001  national_id XN55495771H  iban ZZ01GLBK000000000101
+C000002  national_id XN78068809D  iban ZZ02GLBK000000000201

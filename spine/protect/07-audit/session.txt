@@ -1,0 +1,5 @@
+$ python -m globalbank.audit
+3 kinds of request on silver.customers in the last hour:
+  ana@globalbank.example  getTable                 43
+  ana@globalbank.example  updateTables             16
+  ana@globalbank.example  deleteTable              8

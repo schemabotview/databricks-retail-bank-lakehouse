@@ -1,0 +1,7 @@
+$ python -m globalbank.lineage
+files in landing/card_auths  -> bronze.card_auths
+files in landing/core_cdc    -> bronze.core_cdc
+bronze.core_cdc              -> silver.accounts
+bronze.card_auths            -> silver.card_transactions
+bronze.core_cdc              -> silver.customers
+bronze.core_cdc              -> silver.customers_history
