@@ -4,13 +4,13 @@ $ python -m globalbank.run | sed -n 1p
 update COMPLETED
 $ python -m globalbank.warehouse sql/gold/regulatory_snapshot.sql > /dev/null
 $ python -m globalbank.asof
-as reported: version 0, written 2026-10-27T21:51
+as reported: version 0, written 2026-10-27T22:36
 day         approved  cleared  cleared_eur
 2026-10-28        92       92      5909.61
-2026-10-29      5449     5449    303466.98
-2026-10-30      5442     5442    305870.20
-2026-10-31      6200     6200    343145.62
-as restated: version 1, written 2026-10-27T21:53
+2026-10-29      5449     3677    203194.93
+2026-10-30      5442     1793     98475.31
+2026-10-31      6200        0  None
+as restated: version 1, written 2026-10-27T22:39
 day         approved  cleared  cleared_eur
 2026-10-28        92       92      5909.61
 2026-10-29      5449     5449    303466.98

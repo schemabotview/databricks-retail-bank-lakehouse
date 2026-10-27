@@ -1,5 +1,6 @@
 $ python -m globalbank.warehouse sql/gold/daily_balances.sql
-num_affected_rows  num_inserted_rows
+rows    accounts  first_day   last_day
+393507      6535  2026-09-01  2026-10-31
 $ python -m globalbank.warehouse sql/gold/balance_of.sql account=A0000011
 week_from   balances
 2026-10-01                          -1,507  -1,649  -1,683  -1,683
