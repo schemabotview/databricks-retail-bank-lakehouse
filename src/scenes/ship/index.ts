@@ -1,6 +1,6 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, linesFrom } from '../ide'
+import { ideFrame, lineOf, linesFrom } from '../ide'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import drift1 from '../../../spine/ship/01-drift/project/globalbank/drift.py?raw'
@@ -42,7 +42,7 @@ const drift1Scene: SceneModel = ideFrame({
   session: s1,
   side: [
     {
-      type: 'group', id: 'where', title: 'Two copies of one job', icon: 'git-branch', tone: 'consume', ...FILL, children: [
+      type: 'group', id: 'where', title: 'Two copies of one job', icon: 'search', tone: 'consume', ...FILL, children: [
         { type: 'item', id: 'w-repo', title: 'resources/nightly.yml', sub: 'in the repo: reviewed, versioned', icon: 'file' },
         { type: 'item', id: 'w-job', title: 'globalbank_nightly', sub: 'in the workspace: what actually runs', icon: 'workflow' },
         { type: 'item', id: 'w-click', title: 'someone edits it in the UI', sub: 'no commit, no review, no history', icon: 'bell', tone: 'consume' },
@@ -71,7 +71,14 @@ const bundle2Scene: SceneModel = ideFrame({
         { type: 'item', id: 'p-root', title: 'databricks.yml', sub: 'the bundle: name, variables, targets', icon: 'file' },
         { type: 'item', id: 'p-res', title: 'resources/*.yml', sub: 'the pipeline, the nightly job', icon: 'layers' },
         { type: 'item', id: 'p-code', title: 'the code it syncs', sub: 'pipelines/, sql/, jobs/, globalbank/', icon: 'code' },
-        { type: 'item', id: 'p-ws', title: field(out2, 'Path').replace(/^\/Workspace/, '') || 'the bundle folder', sub: `target ${field(out2, 'Target')}: where it deploys`, icon: 'databricks' },
+        { type: 'item', id: 'p-ws', title: `the bundle folder, target ${field(out2, 'Target')}`, sub: field(out2, 'Path').replace(/^.*\/\.bundle/, '…/.bundle'), icon: 'databricks' },
+      ],
+    },
+    {
+      type: 'table', id: 'said', title: 'databricks bundle validate', tone: 'ingest', columns: ['', ''], rows: [
+        { id: 'v-name', cells: ['bundle', field(out2, 'Name')] },
+        { id: 'v-target', cells: ['target', field(out2, 'Target')] },
+        { id: 'v-ok', cells: ['result', out2.trim().split('\n').pop() ?? ''], tone: 'ingest' },
       ],
     },
   ],
@@ -110,19 +117,23 @@ const dev4 = outputOf(s4, `${B} validate -t dev | sed -n 1,5p`)
 const prod4 = outputOf(s4, `${B} validate -t prod | sed -n 1,5p`)
 const targets4: SceneModel = ideFrame({
   tree: tree(['databricks.yml', 'resources/'], 'databricks.yml'),
-  editor: { file: 'databricks.yml', code: bundle4, lang: 'text', ...view(bundle4, 'variables:', undefined, 0), highlight: linesFrom(bundle4, 'targets:', 'root_path:') },
+  editor: { file: 'databricks.yml', code: bundle4, lang: 'text', show: [[lineOf(bundle4, 'variables:'), lineOf(bundle4, 'variables: {catalog: globalbank_prod}')]], highlight: linesFrom(bundle4, 'targets:', 'variables: {catalog: globalbank_prod}') },
   session: s4,
   side: [
     {
-      type: 'group', id: 'one', title: 'One bundle, two targets', icon: 'package', tone: 'ingest', dir: 'row', children: [
+      type: 'group', id: 'one', title: 'One bundle, two targets', icon: 'package', tone: 'ingest', children: [
         { type: 'item', id: 't-bundle', title: 'globalbank', sub: 'one set of files', icon: 'package' },
-        { type: 'item', id: 't-dev', title: 'dev', sub: 'prefixed, schedules paused', icon: 'code', tone: 'ingest' },
-        { type: 'item', id: 't-prod', title: 'prod', sub: 'validated here, not deployed', icon: 'databricks', tone: 'consume' },
+        {
+          type: 'group', id: 'two', bare: true, dir: 'row', children: [
+            { type: 'item', id: 't-dev', title: 'dev', sub: 'prefixed, schedules paused', icon: 'code', tone: 'ingest' },
+            { type: 'item', id: 't-prod', title: 'prod', sub: 'validated here, not deployed', icon: 'databricks', tone: 'consume' },
+          ],
+        },
       ],
     },
     {
       type: 'table', id: 'diff', title: 'What each target changes', tone: 'ingest', columns: ['', 'dev', 'prod'], rows: [
-        { id: 'x-path', cells: ['folder', field(dev4, 'Path').replace(/^.*\.bundle/, '….bundle'), field(prod4, 'Path').replace(/^.*\.bundle/, '….bundle')] },
+        { id: 'x-path', cells: ['folder', field(dev4, 'Path').replace(/^.*\.bundle/, '…/.bundle'), field(prod4, 'Path').replace(/^.*\.bundle/, '…/.bundle')] },
         { id: 'x-mode', cells: ['mode', 'development', 'production'] },
         { id: 'x-name', cells: ['names', 'dev_ana_globalbank_…', 'globalbank_…'] },
         { id: 'x-cat', cells: ['pipeline catalog', 'globalbank_dev', 'globalbank_prod'] },
@@ -147,11 +158,16 @@ const deployRun5: SceneModel = ideFrame({
   session: s5,
   side: [
     {
-      type: 'group', id: 'flow', title: 'databricks bundle deploy, then run', icon: 'upload', tone: 'ingest', ...FILL, children: [
-        ...deploy5.map((line, i) => ({ type: 'item' as const, id: `d-${i}`, title: line.replace(/\.\.\.$/, ''), icon: i === deploy5.length - 1 ? 'check' : 'upload' })),
+      type: 'group', id: 'flow', title: 'databricks bundle deploy, then run', icon: 'cloud', tone: 'ingest', ...FILL, children: [
+        ...deploy5.map((line, i) => {
+          const made = line.match(/^Created (\w+)\.(\w+)$/)
+          const [title, sub] = made ? [`created: ${made[1].replace(/s$/, '')}`, made[2]] : line.replace(/\.\.\.$/, '').split(/: (.*)/)
+          return { type: 'item' as const, id: `d-${i}`, title, sub: sub ?? '', icon: made ? 'package' : i === deploy5.length - 1 ? 'check' : 'cloud' }
+        }),
         { type: 'item', id: 'd-run', title: state5 ? state5[1] : 'globalbank_nightly', sub: state5 ? `${state5[2]} ${state5[3] ?? ''}`.trim() : '', icon: 'workflow', tone: 'ingest' },
       ],
     },
+    { type: 'note', id: 'note', tone: 'ingest', text: 'In development mode the file trigger is paused, so bundle run starts the job once by hand. The next deploy changes only what the YAML changed.' },
   ],
   edges: [...deploy5.map((_, i) => ({ from: `d-${i}`, to: i + 1 < deploy5.length ? `d-${i + 1}` : 'd-run' }))],
 })
@@ -172,6 +188,13 @@ const tests6: SceneModel = ideFrame({
         { type: 'item', id: 'p-fn', title: 'globalbank/transforms.py', sub: 'transforms as functions of DataFrames', icon: 'file' },
       ],
     },
+    {
+      type: 'table', id: 'what', title: 'What each test checks', tone: 'ingest', columns: ['test', 'runs on', 'checks'], rows: [
+        { id: 'w-vel', cells: ['velocity', 'local PySpark', '1, 2, … 6, then 1 again'] },
+        { id: 'w-seq', cells: ['latest change', 'local PySpark', 'the higher sequence wins'] },
+        { id: 'w-ring', cells: ['the October ring', 'the workspace', 'six cards over 5 in 10 min'], tone: 'consume' },
+      ],
+    },
   ],
   edges: [
     { from: 'p-fn', to: 'p-unit', label: 'many, fast' },
@@ -184,14 +207,14 @@ const tests6: SceneModel = ideFrame({
 const out7 = outputOf(s7, `${B} validate -t prod | tail -1`)
 const ci7: SceneModel = ideFrame({
   tree: tree(['.github/workflows/deploy.yml', 'databricks.yml', 'tests/'], '.github/workflows/deploy.yml', ['.github/workflows/deploy.yml']),
-  editor: { file: '.github/workflows/deploy.yml', code: workflow7, lang: 'text', highlight: linesFrom(workflow7, '  deploy:', 'run: databricks bundle deploy -t prod') },
+  editor: { file: '.github/workflows/deploy.yml', code: workflow7, lang: 'text', ...view(workflow7, 'jobs:', undefined, 0), highlight: linesFrom(workflow7, '  deploy:', 'run: databricks bundle deploy -t prod') },
   session: s7,
   side: [
     {
-      type: 'group', id: 'ci', title: 'Pull request → test → deploy', icon: 'git-branch', tone: 'ingest', ...FILL, children: [
-        { type: 'item', id: 'c-pr', title: 'a pull request', sub: 'a change to the code or the YAML', icon: 'git-branch' },
+      type: 'group', id: 'ci', title: 'Pull request → test → deploy', icon: 'workflow', tone: 'ingest', ...FILL, children: [
+        { type: 'item', id: 'c-pr', title: 'a pull request', sub: 'a change to the code or the YAML', icon: 'code' },
         { type: 'item', id: 'c-test', title: 'test', sub: 'pytest on local PySpark, on every PR', icon: 'check' },
-        { type: 'item', id: 'c-merge', title: 'merge to main', sub: 'a reviewer approves', icon: 'git-merge' },
+        { type: 'item', id: 'c-merge', title: 'merge to main', sub: 'a reviewer approves', icon: 'users' },
         { type: 'item', id: 'c-deploy', title: 'bundle deploy -t prod', sub: `as a service principal · here: ${out7}`, icon: 'databricks', tone: 'consume' },
       ],
     },

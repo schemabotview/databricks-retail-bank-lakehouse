@@ -47,7 +47,7 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | 8 | `serve` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio |
 | 9 | `detect` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio (scoring on the laptop) |
 | 10 | `schedule` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (10.4 a concept scene with the real output) |
-| 11 | `ship` | 7 | not started |
+| 11 | `ship` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (prod validated, not deployed; 11.6 unit tests run local; 11.7 deploy documented) |
 | 12 | `operate` | 6 | not started |
 
 ## Workspace quotas (learned 2026-10-27)

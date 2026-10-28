@@ -8,6 +8,7 @@ import { pipeline } from './pipeline'
 import { serve } from './serve'
 import { detect } from './detect'
 import { schedule } from './schedule'
+import { ship } from './ship'
 import type { Course, Section } from './types'
 
 // Course registry, in syllabus order. One course per course of COURSE-PLAN.md; a course is
@@ -23,6 +24,7 @@ export const COURSES: Record<string, Course> = {
   [serve.id]: serve,
   [detect.id]: detect,
   [schedule.id]: schedule,
+  [ship.id]: ship,
 }
 
 export type { Course, Section }
