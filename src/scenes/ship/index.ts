@@ -85,28 +85,25 @@ const bundle2Scene: SceneModel = ideFrame({
 // §3 — resources: each YAML key becomes one workspace object, with the target's name.
 const out3 = outputOf(s3, `${B} summary`)
 const res3 = all(out3, /^ {2}(\w+):\n {4}(\w+):\n {6}Name: (.*)$/gm).map((m) => ({ kind: m[1], key: m[2], name: m[3] }))
-const resources3: SceneModel = ideFrame({
-  tree: tree(['databricks.yml', 'resources/dashboard.yml', 'resources/globalbank_pipeline.yml', 'resources/nightly.yml'], 'resources/dashboard.yml', ['resources/dashboard.yml']),
-  editor: { file: 'resources/dashboard.yml', code: dashboard3, lang: 'text' },
-  session: s3,
-  side: [
+// bundle summary prints 19 lines, past the terminal's 13 rows: a full concept scene with the real
+// output inside it (CLAUDE.md, "Frames").
+const resources3: SceneModel = {
+  title: 'Resources',
+  sub: 'run on the workspace: databricks bundle summary reads, deploys nothing',
+  nodes: [
     {
-      type: 'table', id: 'res', title: `YAML key → workspace resource (${res3.length})`, tone: 'ingest', columns: ['kind', 'key in the bundle', 'name in dev'],
-      rows: res3.map((r) => ({ id: `r-${r.key}`, cells: [r.kind.toLowerCase(), r.key, r.name] })),
-    },
-    {
-      type: 'group', id: 'how', title: 'One file per resource', icon: 'package', tone: 'ingest', ...FILL, children: [
-        { type: 'item', id: 'h-yml', title: 'resources/dashboard.yml', sub: 'the statements dashboard of Course 8', icon: 'file' },
-        { type: 'item', id: 'h-var', title: '${var.warehouse_id}', sub: 'looked up by name at deploy time', icon: 'search' },
-        { type: 'item', id: 'h-ws', title: 'a Lakeview dashboard', sub: 'not deployed yet: summary only reads', icon: 'chart-bar' },
+      type: 'group', id: 'files', title: 'One file per workspace object', icon: 'package', tone: 'ingest', dir: 'row', children: [
+        { type: 'code', id: 'yml', lang: 'text', filename: 'resources/dashboard.yml', code: dashboard3.trimEnd() },
+        { type: 'code', id: 'summary', terminal: true, filename: 'terminal — globalbank', code: s3.trimEnd() },
       ],
     },
+    {
+      type: 'table', id: 'res', title: `YAML key → workspace object, in dev (${res3.length})`, tone: 'ingest', columns: ['kind', 'key in the bundle', 'name in dev'],
+      rows: res3.map((r) => ({ id: `r-${r.key}`, cells: [r.kind.toLowerCase(), r.key, r.name] })),
+    },
   ],
-  edges: [
-    { from: 'h-yml', to: 'h-var' },
-    { from: 'h-var', to: 'h-ws' },
-  ],
-})
+  edges: [{ from: 'files', to: 'res', label: 'the CLI resolves' }],
+}
 
 // §4 — targets: one bundle, dev and prod.
 const dev4 = outputOf(s4, `${B} validate -t dev | sed -n 1,5p`)

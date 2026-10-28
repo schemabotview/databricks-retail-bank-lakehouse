@@ -1,1 +1,5 @@
 $ python -m globalbank.drift
+globalbank_nightly, edited in the workspace
+  max_concurrent_runs  repo: 1          workspace: 3
+  tags                 repo: -          workspace: {'edited': 'by hand'}
+resources/nightly.yml: unchanged; nothing records the edit

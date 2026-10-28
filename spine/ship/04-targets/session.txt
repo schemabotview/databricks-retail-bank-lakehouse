@@ -1,2 +1,12 @@
 $ databricks bundle validate -t dev | sed -n 1,5p
+Name: globalbank
+Target: dev
+Workspace:
+  User: ana@globalbank.example
+  Path: /Workspace/Users/ana@globalbank.example/.bundle/globalbank/dev
 $ databricks bundle validate -t prod | sed -n 1,5p
+Name: globalbank
+Target: prod
+Workspace:
+  User: ana@globalbank.example
+  Path: /Workspace/Users/ana@globalbank.example/.bundle/globalbank/prod

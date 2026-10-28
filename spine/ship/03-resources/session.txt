@@ -1,1 +1,19 @@
 $ databricks bundle summary
+Name: globalbank
+Target: dev
+Workspace:
+  User: ana@globalbank.example
+  Path: /Workspace/Users/ana@globalbank.example/.bundle/globalbank/dev
+Resources:
+  Dashboards:
+    globalbank_statements:
+      Name: dev_ana_globalbank statements
+      URL:  (not deployed)
+  Jobs:
+    globalbank_nightly:
+      Name: dev_ana_globalbank_nightly
+      URL:  (not deployed)
+  Pipelines:
+    globalbank_pipeline:
+      Name: dev_ana_globalbank_pipeline
+      URL:  (not deployed)
