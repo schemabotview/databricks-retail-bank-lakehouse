@@ -15,6 +15,7 @@ test = spark.sql("""SELECT f.*, t.amount FROM globalbank_dev.ml.card_features f
                     JOIN globalbank_dev.silver.card_transactions t
                       USING (auth_id)
                     WHERE f.day = '2026-09-26'""").toPandas()
+mlflow.set_tracking_uri('databricks')
 mlflow.set_registry_uri('databricks-uc')
 CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'
 model = mlflow.sklearn.load_model(CHAMPION)
