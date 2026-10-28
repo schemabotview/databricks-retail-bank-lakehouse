@@ -1,3 +1,6 @@
 $ python -m globalbank.files globalbank_dev.bronze.card_auths
+globalbank_dev.bronze.card_auths: 8 files, 0.8 MB, 101 KB a file
 $ python -m globalbank.optimize globalbank_dev.bronze.card_auths
+OPTIMIZE globalbank_dev.bronze.card_auths: 8 files removed, 1 added
 $ python -m globalbank.files globalbank_dev.bronze.card_auths
+globalbank_dev.bronze.card_auths: 1 files, 0.7 MB, 694 KB a file

@@ -1,1 +1,6 @@
 $ python -m globalbank.cost
+11.03 DBUs since 27 October, billed up to 28 Oct 00:00:
+  INTERACTIVE                   6.70
+  DEFAULT_STORAGE               4.16
+  PREDICTIVE_OPTIMIZATION       0.12
+  GENIE                         0.05

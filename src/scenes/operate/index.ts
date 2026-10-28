@@ -167,16 +167,16 @@ const finished5: SceneModel = appMap({
 // §6 — where next: documented, each part of the bank → the product that takes it further.
 const next6: SceneModel = {
   title: 'Where next',
-  sub: 'documented (docs.databricks.com, checked 2026-10-27): what this course left out, by the part of the bank it extends',
+  sub: 'documented (docs.databricks.com, Free Edition limitations checked 2026-10-28): what this course left out, by the part of the bank it extends',
   nodes: [
     {
       type: 'table', id: 'next', columns: ['the bank’s part', 'next', 'on Free Edition'], rows: [
-        { id: 'n-serve', cells: ['gold, for people who do not write SQL', 'Genie: questions in plain language over gold', 'yes'], tone: 'serve' },
-        { id: 'n-app', cells: ['a branch’s customer screen', 'Databricks Apps, reading gold', 'yes, up to 3 apps'] },
-        { id: 'n-oltp', cells: ['a balance that must be exact now', 'Lakebase: Postgres beside the lakehouse', 'yes, 1 project'] },
-        { id: 'n-model', cells: ['the fraud model, called per payment', 'Model Serving: an endpoint for @champion', 'limited'] },
-        { id: 'n-mon', cells: ['silver’s quality, watched', 'data profiling (formerly Lakehouse Monitoring)', 'check the docs'] },
-        { id: 'n-share', cells: ['statements to a partner bank', 'Delta Sharing', 'check the docs'] },
+        { id: 'n-serve', cells: ['gold, for people who do not write SQL', 'Genie: questions in plain language over gold', 'yes: GENIE is on this bill (12.1)'], tone: 'serve' },
+        { id: 'n-app', cells: ['a branch’s customer screen', 'Databricks Apps, reading gold', 'up to 3; each runs 24 h per start'] },
+        { id: 'n-oltp', cells: ['a balance that must be exact now', 'Lakebase: Postgres beside the lakehouse', '1 project, scales to zero'] },
+        { id: 'n-model', cells: ['the fraud model, called per payment', 'Model Serving: an endpoint for @champion', 'yes, limited: no GPU'] },
+        { id: 'n-mon', cells: ['silver’s quality, watched', 'data profiling (formerly Lakehouse Monitoring)', 'not on the limits page'] },
+        { id: 'n-share', cells: ['statements to a partner bank', 'Delta Sharing', 'not on the limits page'] },
         { id: 'n-breadth', cells: ['every other platform feature', 'the companion course: databricks-data-engineer-ct', '—'], tone: 'infra' },
       ],
     },
