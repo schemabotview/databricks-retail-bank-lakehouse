@@ -1,14 +1,4 @@
 $ python -m globalbank.train
-[1;38;5;208mIf you are using MLflow Tracing, consider storing your traces in Unity Catalog for unlimited storage (no 100,000 trace limit), fine-grained access controls, and queryability from notebooks, SQL, and dashboards. [94mLearn more: https://docs.databricks.com/aws/en/mlflow3/genai/tracing/trace-unity-catalog[0m
-🔗 View Logged Model at: https://globalbank.cloud.databricks.com/ml/experiments/3613306986431775/models/m-86659b5e2ee44663a059805e1a9c6976
-/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/types/utils.py:440: UserWarning: Hint: Inferred schema contains integer column(s). Integer columns in Python cannot represent missing values. If your input data contains missing values at inference time, it will be encoded as floats and will cause a schema enforcement error. The best way to avoid this problem is to infer the model schema based on a realistic data sample (training dataset) that includes missing values. Alternatively, you can declare integer columns as doubles (float64) whenever these columns may have missing values. See `Handling Integers With Missing Values <https://www.mlflow.org/docs/latest/models.html#handling-integers-with-missing-values>`_ for more details.
-  warnings.warn(
-/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/types/utils.py:440: UserWarning: Hint: Inferred schema contains integer column(s). Integer columns in Python cannot represent missing values. If your input data contains missing values at inference time, it will be encoded as floats and will cause a schema enforcement error. The best way to avoid this problem is to infer the model schema based on a realistic data sample (training dataset) that includes missing values. Alternatively, you can declare integer columns as doubles (float64) whenever these columns may have missing values. See `Handling Integers With Missing Values <https://www.mlflow.org/docs/latest/models.html#handling-integers-with-missing-values>`_ for more details.
-  warnings.warn(
-Successfully registered model 'globalbank_dev.ml.card_fraud'.
-🔗 Created version '1' of model 'globalbank_dev.ml.card_fraud': https://globalbank.cloud.databricks.com/explore/data/models/globalbank_dev/ml/card_fraud/version/1
-🏃 View run logreg-sep12 at: https://globalbank.cloud.databricks.com/ml/experiments/3613306986431775/runs/a043440a0a6241ca91c7926c21d39495
-🧪 View experiment at: https://globalbank.cloud.databricks.com/ml/experiments/3613306986431775
 trained on 6,343 rows (60 fraud), tested on 6,346 (60 fraud)
   precision 1.000
   recall    1.000
