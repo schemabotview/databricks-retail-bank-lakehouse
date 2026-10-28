@@ -114,7 +114,7 @@ const repair4: SceneModel = ideFrame({
       type: 'group', id: 'how', title: 'Repair, not re-run', icon: 'settings', tone: 'ingest', ...FILL, children: [
         { type: 'item', id: 'h-fail', title: 'check fails: no clearing file for 31 Oct', sub: 'what depends on it is skipped', icon: 'bell' },
         { type: 'item', id: 'h-fix', title: 'the file lands', sub: 'land.sh 2026-10-31 settlements', icon: 'file' },
-        { type: 'item', id: 'h-repair', title: 'repair the same run', sub: 'only failed tasks and what follows', icon: 'check' },
+        { type: 'item', id: 'h-repair', title: 'repair the same run', sub: 'from the pipeline down: the file enters there', icon: 'check' },
       ],
     },
   ],

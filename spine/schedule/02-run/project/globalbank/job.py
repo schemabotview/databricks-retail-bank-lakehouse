@@ -12,7 +12,8 @@ from globalbank.deploy import NAME as PIPELINE
 from globalbank.warehouse import warehouse
 
 NAME = 'globalbank_nightly'
-FILES = ['sql/gold/accounts.sql', 'sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql',
+FILES = ['sql/gold/accounts.sql', 'sql/gold/daily_balances.sql',
+         'sql/gold/monthly_statements.sql',
          'sql/gold/month_end.sql', 'sql/fraud/flags.sql', 'jobs/check.py']
 
 
@@ -44,12 +45,17 @@ def job_id(w):
 
 def report(w, run):
     run = w.jobs.get_run(run.run_id)
-    print(f'run {run.state.result_state.value}'
-          f' ({run.trigger.value.lower()}): {len(run.tasks)} tasks')
+    latest, tries = {}, {}  # one entry per attempt: retried, repaired
     for t in sorted(run.tasks, key=lambda t: t.start_time or 0):
+        latest[t.task_key] = t
+        tries[t.task_key] = tries.get(t.task_key, 0) + 1
+    print(f'run {run.state.result_state.value}'
+          f' ({run.trigger.value.lower()}): {len(latest)} tasks')
+    for key, t in latest.items():
         state = t.state.result_state.value if t.state.result_state else '-'
-        print(f'  {t.task_key:<11}{state:<16}'
-              + (t.state.state_message or '')[:48].split('\n')[0])
+        why = w.jobs.get_run_output(t.run_id).error if state == 'FAILED' else ''
+        note = f'{tries[key]} attempts' if tries[key] > 1 else ''
+        print(f'  {key:<11}{state:<9}{note:<11}' + (why or '')[:46])
 
 
 if __name__ == '__main__':

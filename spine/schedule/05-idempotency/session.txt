@@ -1,3 +1,8 @@
 $ python -m globalbank.job run | sed -n 1p
+run SUCCESS (one_time): 7 tasks
 $ python -m globalbank.job run | sed -n 1p
+run SUCCESS (one_time): 7 tasks
 $ python -m globalbank.warehouse sql/gold/month_end_rows.sql
+month    accounts  deposits_eur
+2026-10      6442   34951305.98
+2026-10      6442   34951305.98

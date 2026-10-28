@@ -1,4 +1,13 @@
 $ python -m globalbank.job deploy | sed -n 1p
+globalbank_nightly: updated
 $ sleep 90
 $ bash land.sh 2026-11-01 settlements | wc -l
+1
 $ python -m globalbank.job wait
+run SUCCESS (file_arrival): 6 tasks
+  pipeline   SUCCESS         
+  accounts   SUCCESS         
+  balances   SUCCESS         
+  flags      SUCCESS         
+  statements SUCCESS         
+  check      SUCCESS         

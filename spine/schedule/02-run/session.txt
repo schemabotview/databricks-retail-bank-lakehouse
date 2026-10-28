@@ -1,1 +1,8 @@
 $ python -m globalbank.job run
+run SUCCESS (one_time): 6 tasks
+  pipeline   SUCCESS         
+  accounts   SUCCESS         
+  balances   SUCCESS         
+  flags      SUCCESS         
+  statements SUCCESS         
+  check      SUCCESS         

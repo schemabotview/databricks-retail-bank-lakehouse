@@ -1,1 +1,8 @@
 $ python -m globalbank.job deploy
+globalbank_nightly: created
+  pipeline   first
+  accounts   after pipeline
+  balances   after pipeline
+  statements after balances
+  flags      after pipeline
+  check      after accounts, statements, flags

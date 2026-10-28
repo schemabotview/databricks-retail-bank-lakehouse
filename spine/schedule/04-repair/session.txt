@@ -1,3 +1,22 @@
 $ python -m globalbank.job run
+run FAILED (one_time): 7 tasks
+  pipeline   SUCCESS         
+  accounts   SUCCESS         
+  balances   SUCCESS         
+  flags      SUCCESS         
+  statements SUCCESS         
+  check      FAILED          Workload failed, see run output for details
+  check      FAILED          Workload failed, see run output for details
 $ bash land.sh 2026-10-31 settlements | wc -l
+1
 $ python -m globalbank.job repair
+run FAILED (one_time): 9 tasks
+  pipeline   SUCCESS         
+  accounts   SUCCESS         
+  balances   SUCCESS         
+  flags      SUCCESS         
+  statements SUCCESS         
+  check      FAILED          Workload failed, see run output for details
+  check      FAILED          Workload failed, see run output for details
+  check      FAILED          Workload failed, see run output for details
+  check      FAILED          Workload failed, see run output for details

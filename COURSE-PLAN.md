@@ -363,7 +363,7 @@ the model stays a laptop step (9.7). The failure in 10.4 is a missing clearing f
 | 1 | The nightly run | pipeline → balances → statements; fraud rule; check | the task graph |
 | 2 | A job | create it, `databricks jobs run-now` | job → tasks → a run |
 | 3 | File arrival | the settlement file lands → the job starts | trigger → run |
-| 4 | Failure and repair | the day's clearing file is missing: the check fails; it lands; repair re-runs what failed | task states before / after repair |
+| 4 | Failure and repair | the day's clearing file is missing: the check fails; it lands; repair re-runs the same run from the pipeline down (the file enters there) | task states before / after repair |
 | 5 | Idempotency | a re-run statement task appends twice; fix it | rows after two runs |
 | 6 | Parameters and task values | `run_date` in, a count out | values flowing between tasks |
 | 7 | Who the job runs as | `run_as`, notifications on failure | identity of each run |

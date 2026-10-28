@@ -1,2 +1,5 @@
 $ python -m globalbank.job deploy | sed -n 1p
+globalbank_nightly: updated
 $ python -m globalbank.job who
+run as: ana@globalbank.example
+on failure, email: ana@globalbank.example
