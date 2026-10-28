@@ -1,1 +1,9 @@
 $ python -m globalbank.ring 2026-10-22
+2026-10-22, before 05:00: 6 cards with more than 3 auths
+  K003529  11 auths in  9 min   14.14 EUR  7 declined  11 merchants
+  K000610  11 auths in  8 min   14.14 EUR  4 declined  10 merchants
+  K002281  11 auths in 12 min   15.84 EUR  4 declined  8 merchants
+  K001595  11 auths in 10 min   13.36 EUR  1 declined  11 merchants
+  K003458  11 auths in 12 min   16.03 EUR  5 declined  11 merchants
+  K003151  11 auths in  6 min   15.72 EUR  2 declined  9 merchants
+K003529: 02:10/0.56 02:11/1.50 02:11/1.29 02:11/0.91 02:12/1.99 02:13/1.73 02:14/1.63 02:15/1.34 02:17/1.81 02:18/0.64 02:19/0.74

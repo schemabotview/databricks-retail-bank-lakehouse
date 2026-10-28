@@ -1,1 +1,8 @@
 $ python -m globalbank.warehouse sql/fraud/velocity.sql
+day         flagged  fraud_flagged  fraud
+2026-09-11        0              0      0
+2026-09-12       28             28     60
+2026-09-25        0              0      0
+2026-09-26       34             34     60
+2026-10-21        0              0      0
+2026-10-22       36              0      0
