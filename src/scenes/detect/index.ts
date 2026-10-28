@@ -88,16 +88,15 @@ const rules2Scene: SceneModel = ideFrame({
 })
 
 // §3 — a streaming rule: windows and a watermark over bronze.
-const flags3 = all(outputOf(s3, 'python -m globalbank.stream'), /^(\d+ \w+ \d\d:\d\d)-(\d\d:\d\d)\s+(K\d+)\s+(\d+) auths\s+([\d.]+) EUR$/gm)
-  .map((m) => ({ from: m[1], to: m[2], card: m[3], auths: m[4], eur: m[5] }))
+const nights3 = grid(outputOf(s3, 'python -m globalbank.stream'))
 const stream3Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/stream.py', 'globalbank/ring.py'], 'globalbank/stream.py', ['globalbank/stream.py']),
   editor: { file: 'globalbank/stream.py', code: stream3, highlight: linesFrom(stream3, ".withWatermark('auth_ts', '30 minutes')", ".where('auths > 5'))") },
   session: s3,
   side: [
     {
-      type: 'table', id: 'flags', title: `gold.fraud_flags: ${flags3.length} windows`, tone: 'consume', columns: ['window', 'card', 'auths', 'EUR'],
-      rows: flags3.map((f, i) => ({ id: `f-${i}`, cells: [`${f.from}–${f.to}`, f.card, f.auths, f.eur], tone: 'consume' as const })),
+      type: 'table', id: 'flags', title: 'gold.fraud_flags, a night to a row', tone: 'consume', columns: nights3.columns,
+      rows: nights3.rows.map((r) => ({ id: `n-${r[0].replace(/\W+/g, '-')}`, cells: r, tone: 'consume' as const })),
     },
     {
       type: 'group', id: 'wm', title: 'Window and watermark', icon: 'stream', tone: 'ingest', ...FILL, children: [
@@ -208,7 +207,7 @@ const score7Scene: SceneModel = ideFrame({
       type: 'group', id: 'path', title: head7, icon: 'shield', tone: 'consume', ...FILL, children: [
         { type: 'item', id: 'p-feat', title: 'ml.card_features, 22 October', sub: 'pulled by Databricks Connect', icon: 'table' },
         { type: 'item', id: 'p-model', title: 'card_fraud@champion', sub: 'loaded from Unity Catalog', icon: 'package' },
-        { type: 'item', id: 'p-flags', title: 'gold.fraud_flags', sub: 'score ≥ 0.9: appended', icon: 'bell' },
+        { type: 'item', id: 'p-flags', title: 'ml.fraud_scores', sub: 'score ≥ 0.9: appended for the analysts', icon: 'bell' },
       ],
     },
     {

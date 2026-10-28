@@ -198,7 +198,8 @@ Course 9).
 | `daily_balances`, `monthly_statements`, `card_spend_daily` | gold | 7, 8 |
 | `regulatory_snapshot` | gold | 8 |
 | `accounts` (product, overdraft limit, region, segment: what consumers group and filter by) | gold | 8 |
-| `fraud_flags` | gold | 9 |
+| `fraud_flags` (the rule's flags) | gold | 9, 10 |
+| `card_features`, `fraud_scores` (the model's scores), the `card_fraud` model | ml | 9 |
 
 The layers also organise governance and operations: grants follow them (engineers bronze and
 silver, analysts gold only; masks apply at silver, so gold inherits them — Course 6); the pipeline

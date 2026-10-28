@@ -45,7 +45,7 @@ const [whName, whRest] = about1.split(': ')
 const spend1 = grid(outputOf(s1, `${WH} sql/gold/card_spend.sql`))
 const warehouse1Scene: SceneModel = ideFrame({
   tree: tree(['sql/gold/card_spend.sql', 'globalbank/warehouse.py'], 'globalbank/warehouse.py', ['globalbank/warehouse.py', 'sql/gold/card_spend.sql']),
-  editor: { file: 'globalbank/warehouse.py', code: warehouse1, highlight: linesFrom(warehouse1, 'r = w.statement_execution.execute_statement(', 'for k, v in params.items()])') },
+  editor: { file: 'globalbank/warehouse.py', code: warehouse1, ...view(warehouse1, 'def run(w, sql'), highlight: linesFrom(warehouse1, 'r = w.statement_execution.execute_statement(', 'for k, v in params.items()])') },
   session: s1,
   side: [
     {
@@ -112,16 +112,17 @@ const statements3Scene: SceneModel = ideFrame({
 
 // §4 — the regulator's question: as reported, and as restated after late clearing files.
 const out4 = outputOf(s4, 'python -m globalbank.asof')
-const parts4 = out4.split(/^as (?:reported|restated): .*$/m).slice(1).map((p) => grid(p))
-const heads4 = all(out4, /^(as \w+): version (\d+)/gm).map((m) => ({ label: m[1], v: m[2] }))
+const heads4 = out4.match(/^as reported: version (\d+)\s+as restated: version (\d+)$/m)!
+const rows4 = grid(out4.split('\n').slice(1).join('\n'))
+const col4 = (name: string) => rows4.columns.indexOf(name)
 const asof4Scene: SceneModel = ideFrame({
   tree: tree(['sql/gold/regulatory_snapshot.sql', 'globalbank/asof.py', 'globalbank/warehouse.py'], 'globalbank/asof.py', ['sql/gold/regulatory_snapshot.sql', 'globalbank/asof.py']),
   editor: { file: 'globalbank/asof.py', code: asof4, highlight: [lineOf(asof4, 'TIMESTAMP AS OF')] },
   session: s4,
   side: [
     {
-      type: 'table', id: 'two', title: 'Card book, 28–31 October: cleared EUR', tone: 'serve', columns: ['day', `${heads4[0].label} (v${heads4[0].v})`, `${heads4[1].label} (v${heads4[1].v})`],
-      rows: parts4[0].rows.map((r, i) => ({ id: `d-${r[0]}`, cells: [r[0], r[3] === 'None' ? 'nothing yet' : r[3], parts4[1].rows[i][3]], tone: r[3] !== parts4[1].rows[i][3] ? 'serve' as const : undefined })),
+      type: 'table', id: 'two', title: 'Card book: cleared EUR, then and now', tone: 'serve', columns: ['day', 'approved', `as reported (v${heads4[1]})`, `as restated (v${heads4[2]})`],
+      rows: rows4.rows.map((r) => ({ id: `d-${r[0]}`, cells: [r[0], r[col4('approved')], r[col4('eur_then')], r[col4('eur_now')]], tone: r[col4('eur_then')] !== r[col4('eur_now')] ? 'serve' as const : undefined })),
     },
     {
       type: 'group', id: 'why', title: 'Why the numbers moved', icon: 'clock', tone: 'serve', ...FILL, children: [
@@ -197,7 +198,7 @@ const alerts6Scene: SceneModel = ideFrame({
 const q7 = grid(outputOf(s7, 'python -m globalbank.slow'))
 const slow7Scene: SceneModel = ideFrame({
   tree: tree(['sql/gold/point.sql', 'globalbank/slow.py', 'globalbank/warehouse.py'], 'globalbank/slow.py', ['sql/gold/point.sql', 'globalbank/slow.py']),
-  editor: { file: 'globalbank/slow.py', code: slow7, highlight: linesFrom(slow7, 'read_files AS files', 'FROM system.query.history') },
+  editor: { file: 'globalbank/slow.py', code: slow7, ...view(slow7, 'RECENT = ', undefined, 0), highlight: linesFrom(slow7, 'read_files AS files', 'FROM system.query.history') },
   session: s7,
   side: [
     {

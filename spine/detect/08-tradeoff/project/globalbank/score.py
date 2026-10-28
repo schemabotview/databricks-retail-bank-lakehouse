@@ -10,7 +10,8 @@ from globalbank.session import get_spark  # noqa: E402
 
 logging.getLogger('mlflow').setLevel(logging.ERROR)
 X = ['auths_10m', 'online', 'tiny_amount', 'night']
-FLAGS = 'globalbank_dev.gold.fraud_flags'
+# The model's scores. gold.fraud_flags is the rule's (the stream, the job).
+SCORES = 'globalbank_dev.ml.fraud_scores'
 
 day, threshold = sys.argv[1], float(sys.argv[2])
 spark = get_spark()
@@ -23,7 +24,7 @@ model = mlflow.sklearn.load_model(CHAMPION)
 batch['score'] = model.predict_proba(batch[X])[:, 1]
 flagged = batch[batch.score >= threshold]
 spark.createDataFrame(flagged[['auth_id', 'card_id', 'auth_ts', 'score']]) \
-    .write.mode('append').saveAsTable(FLAGS)
+    .write.mode('append').saveAsTable(SCORES)
 print(f'{day}: {len(batch):,} scored, {len(flagged)} flagged at {threshold}')
 for card, rows in flagged.groupby('card_id'):
     print(f'  {card}  {len(rows)} auths  first {rows.auth_ts.min():%H:%M}'

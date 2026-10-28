@@ -16,6 +16,11 @@ query = (flags.writeStream.outputMode('append')
          .option('checkpointLocation', CHECKPOINT)
          .trigger(availableNow=True).toTable(FLAGS))
 query.awaitTermination()
-for f in spark.table(FLAGS).orderBy('window').collect():
-    print(f"{f.window.start:%d %b %H:%M}-{f.window.end:%H:%M}  {f.card_id}"
-          f"  {f.auths} auths  {f.total} EUR")
+print('night   windows  cards  first  last   most in a window')
+for r in spark.sql(f"""SELECT to_date(window.start) AS night,
+        count(*) AS windows, count(DISTINCT card_id) AS cards,
+        date_format(min(window.start), 'HH:mm') AS first,
+        date_format(max(window.end), 'HH:mm') AS last, max(auths) AS most
+        FROM {FLAGS} GROUP BY ALL ORDER BY night""").collect():
+    print(f'{r.night:%d %b}  {r.windows:>7}  {r.cards:>5}  {r.first}  {r.last}'
+          f'  {r.most:>16}')

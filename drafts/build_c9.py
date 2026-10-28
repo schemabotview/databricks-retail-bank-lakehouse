@@ -107,9 +107,14 @@ query = (flags.writeStream.outputMode('append')
          .option('checkpointLocation', CHECKPOINT)
          .trigger(availableNow=True).toTable(FLAGS))
 query.awaitTermination()
-for f in spark.table(FLAGS).orderBy('window').collect():
-    print(f"{f.window.start:%d %b %H:%M}-{f.window.end:%H:%M}  {f.card_id}"
-          f"  {f.auths} auths  {f.total} EUR")
+print('night   windows  cards  first  last   most in a window')
+for r in spark.sql(f"""SELECT to_date(window.start) AS night,
+        count(*) AS windows, count(DISTINCT card_id) AS cards,
+        date_format(min(window.start), 'HH:mm') AS first,
+        date_format(max(window.end), 'HH:mm') AS last, max(auths) AS most
+        FROM {FLAGS} GROUP BY ALL ORDER BY night""").collect():
+    print(f'{r.night:%d %b}  {r.windows:>7}  {r.cards:>5}  {r.first}  {r.last}'
+          f'  {r.most:>16}')
 '''
 
 FEATURES = '''"""Features per authorization, in Unity Catalog: what the model sees."""
@@ -214,7 +219,8 @@ from globalbank.session import get_spark  # noqa: E402
 
 logging.getLogger('mlflow').setLevel(logging.ERROR)
 X = ['auths_10m', 'online', 'tiny_amount', 'night']
-FLAGS = 'globalbank_dev.gold.fraud_flags'
+# The model's scores. gold.fraud_flags is the rule's (the stream, the job).
+SCORES = 'globalbank_dev.ml.fraud_scores'
 
 day, threshold = sys.argv[1], float(sys.argv[2])
 spark = get_spark()
@@ -227,7 +233,7 @@ model = mlflow.sklearn.load_model(CHAMPION)
 batch['score'] = model.predict_proba(batch[X])[:, 1]
 flagged = batch[batch.score >= threshold]
 spark.createDataFrame(flagged[['auth_id', 'card_id', 'auth_ts', 'score']]) \\
-    .write.mode('append').saveAsTable(FLAGS)
+    .write.mode('append').saveAsTable(SCORES)
 print(f'{day}: {len(batch):,} scored, {len(flagged)} flagged at {threshold}')
 for card, rows in flagged.groupby('card_id'):
     print(f'  {card}  {len(rows)} auths  first {rows.auth_ts.min():%H:%M}'

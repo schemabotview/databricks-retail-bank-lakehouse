@@ -241,19 +241,23 @@ globalbank_dev.gold.regulatory_snapshot
 """
 
 ASOF = '''"""The regulator's question: the report as it stood then, and as it is now."""
-from globalbank.warehouse import run, show
 from databricks.sdk import WorkspaceClient
+
+from globalbank.warehouse import run, show
 
 SNAPSHOT = 'globalbank_dev.gold.regulatory_snapshot'
 
 w = WorkspaceClient()
 _, history = run(w, f'DESCRIBE HISTORY {SNAPSHOT}')
 first, last = history[-1], history[0]  # newest first
-for label, version in (('as reported', first), ('as restated', last)):
-    print(f'{label}: version {version[0]}, written {version[1][:16]}')
-    show(*run(w, f"""SELECT day, approved, cleared, cleared_eur
-                     FROM {SNAPSHOT} TIMESTAMP AS OF '{version[1]}'
-                     ORDER BY day"""))
+print(f'as reported: version {first[0]}    as restated: version {last[0]}')
+show(*run(w, f"""
+    SELECT day, reported.approved, reported.cleared AS cleared_then,
+           coalesce(reported.cleared_eur, 0) AS eur_then,
+           restated.cleared AS cleared_now, restated.cleared_eur AS eur_now
+    FROM {SNAPSHOT} TIMESTAMP AS OF '{first[1]}' AS reported
+    JOIN {SNAPSHOT} TIMESTAMP AS OF '{last[1]}' AS restated USING (day)
+    ORDER BY day"""))
 '''
 
 DASHBOARD = '''"""Publish the statements dashboard, then run each of its datasets once."""
@@ -434,7 +438,7 @@ step(P, '04-as-of', f'{P}/03-statements', ['sql/gold/regulatory_snapshot.sql', '
      ['bash land.sh 2026-11-01 settlements 2026-11-03 | wc -l', 'python -m globalbank.run | sed -n 1p',
       q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'python -m globalbank.asof'],
      [q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'sleep 5'],
-     extra={**GO, 'mask': [r'written \d{4}-\d{2}-\d{2} \d{2}:\d{2}']})
+     extra=GO)
 step(P, '05-dashboard', f'{P}/04-as-of', ['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json',
                                            'globalbank/dashboard.py'],
      {'sql/gold/accounts.sql': ACCOUNTS, 'dashboards/statements.lvdash.json': lvdash(),

@@ -10,8 +10,5 @@
   "python -m globalbank.warehouse sql/gold/regulatory_snapshot.sql > /dev/null",
   "sleep 5"
  ],
- "continues": true,
- "mask": [
-  "written \\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}"
- ]
+ "continues": true
 }
