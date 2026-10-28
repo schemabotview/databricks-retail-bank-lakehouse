@@ -3,9 +3,9 @@ settlements  eur
        5618  308869.63
 $ python -m globalbank.slow
 statement                           files  pruned  read_mb
--- Gold, a  the bu ine  read  it:       1       0      0.0
-row  =  park.table(d).count()           1       0      0.2
-row  =  park.table(d).count()           1       0      0.1
-row  =  park.table(d).count()           1       0      0.3
-plan  = {r.f: r.t for r in planned      5       0      0.1
-data et  = event .where("event_typ      5       0      0.1
+-- Card spend on one day: the filt      1       1      0.9
+-- Accounts below their overdraft       2       0      1.2
+SELECT a.segment, count(*) AS acco      2       0      0.2
+SELECT a.region, round(sum(m.cards      2       0      0.2
+ SELECT count(*) AS accounts, coun      1       0      0.0
+-- Gold: the account facts consume      2       0      0.2

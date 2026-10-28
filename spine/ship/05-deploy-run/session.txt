@@ -1,2 +1,2 @@
 $ databricks bundle deploy
-$ databricks bundle run globalbank_nightly | tail -1
+$ databricks bundle run globalbank_nightly 2>&1 | grep TERMINATED
