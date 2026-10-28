@@ -6,9 +6,7 @@
  ],
  "workspace": true,
  "venv": true,
- "setup": [
-  "sleep 60"
- ],
+ "setup": [],
  "continues": true,
  "volatile": [
   "digits"

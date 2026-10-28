@@ -1,2 +1,12 @@
 $ python -m globalbank.warehouse sql/alerts/overdrawn.sql
+day         accounts  lowest_eur
+2026-10-25       169       -2257
+2026-10-26       194       -2265
+2026-10-27       220       -2356
+2026-10-28       246       -2418
+2026-10-29       276       -2438
+2026-10-30       304       -2463
+2026-10-31       325       -2605
 $ python -m globalbank.alert
+globalbank overdrafts: created, active
+  when SUM(accounts) GREATER_THAN 0, every day at 07:00 Europe/Amsterdam

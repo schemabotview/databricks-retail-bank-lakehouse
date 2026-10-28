@@ -5,7 +5,7 @@ from mlflow import MlflowClient
 
 MODEL = 'globalbank_dev.ml.card_fraud'
 
-client = MlflowClient(registry_uri='databricks-uc')
+client = MlflowClient(tracking_uri='databricks', registry_uri='databricks-uc')
 if len(sys.argv) > 2 and sys.argv[1] == 'champion':
     client.set_registered_model_alias(MODEL, 'champion', sys.argv[2])
 model = client.get_registered_model(MODEL)

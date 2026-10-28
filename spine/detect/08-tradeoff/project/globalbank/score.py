@@ -16,6 +16,7 @@ day, threshold = sys.argv[1], float(sys.argv[2])
 spark = get_spark()
 batch = spark.table('globalbank_dev.ml.card_features') \
     .where(f"day = '{day}'").toPandas()
+mlflow.set_tracking_uri('databricks')
 mlflow.set_registry_uri('databricks-uc')
 CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'
 model = mlflow.sklearn.load_model(CHAMPION)

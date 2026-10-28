@@ -1,2 +1,11 @@
 $ python -m globalbank.warehouse sql/gold/point.sql
+settlements  eur
+       5618  308869.63
 $ python -m globalbank.slow
+statement                           files  pruned  read_mb
+-- Gold, a  the bu ine  read  it:       1       0      0.0
+row  =  park.table(d).count()           1       0      0.2
+row  =  park.table(d).count()           1       0      0.1
+row  =  park.table(d).count()           1       0      0.3
+plan  = {r.f: r.t for r in planned      5       0      0.1
+data et  = event .where("event_typ      5       0      0.1

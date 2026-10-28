@@ -137,6 +137,8 @@ spark.sql(f"""SELECT day, count(*) AS auths, sum(fraud) AS fraud,
 '''
 
 TRAIN = '''"""Train on 12 September, test on 26 September, track the run in MLflow."""
+import contextlib
+import io
 import logging
 import os
 
@@ -159,19 +161,21 @@ test = data[data.day.astype(str) == '2026-09-26']
 mlflow.set_tracking_uri('databricks')
 mlflow.set_registry_uri('databricks-uc')
 me = WorkspaceClient().current_user.me().user_name
-mlflow.set_experiment(f'/Users/{me}/globalbank_fraud')
-with mlflow.start_run(run_name='logreg-sep12') as run:
-    model = LogisticRegression(C=1.0, class_weight='balanced')
-    model.fit(train[X], train.fraud)
-    seen = model.predict(test[X])
-    metrics = {'precision': precision_score(test.fraud, seen),
-               'recall': recall_score(test.fraud, seen)}
-    mlflow.log_params({'C': 1.0, 'features': ','.join(X),
-                       'train_rows': len(train), 'test_rows': len(test)})
-    mlflow.log_metrics(metrics)
-    info = mlflow.sklearn.log_model(model, name='model',
-                                    input_example=test[X].head(3),
-                                    registered_model_name=MODEL)
+quiet = io.StringIO()  # MLflow prints links and hints of its own
+with contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
+    mlflow.set_experiment(f'/Users/{me}/globalbank_fraud')
+    with mlflow.start_run(run_name='logreg-sep12') as run:
+        model = LogisticRegression(C=1.0, class_weight='balanced')
+        model.fit(train[X], train.fraud)
+        seen = model.predict(test[X])
+        metrics = {'precision': precision_score(test.fraud, seen),
+                   'recall': recall_score(test.fraud, seen)}
+        mlflow.log_params({'C': 1.0, 'features': ','.join(X),
+                           'train_rows': len(train), 'test_rows': len(test)})
+        mlflow.log_metrics(metrics)
+        info = mlflow.sklearn.log_model(model, name='model',
+                                        input_example=test[X].head(3),
+                                        registered_model_name=MODEL)
 print(f'trained on {len(train):,} rows ({int(train.fraud.sum())} fraud),'
       f' tested on {len(test):,} ({int(test.fraud.sum())} fraud)')
 for name, value in metrics.items():
@@ -188,7 +192,7 @@ from mlflow import MlflowClient
 
 MODEL = 'globalbank_dev.ml.card_fraud'
 
-client = MlflowClient(registry_uri='databricks-uc')
+client = MlflowClient(tracking_uri='databricks', registry_uri='databricks-uc')
 if len(sys.argv) > 2 and sys.argv[1] == 'champion':
     client.set_registered_model_alias(MODEL, 'champion', sys.argv[2])
 model = client.get_registered_model(MODEL)
@@ -216,6 +220,7 @@ day, threshold = sys.argv[1], float(sys.argv[2])
 spark = get_spark()
 batch = spark.table('globalbank_dev.ml.card_features') \\
     .where(f"day = '{day}'").toPandas()
+mlflow.set_tracking_uri('databricks')
 mlflow.set_registry_uri('databricks-uc')
 CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'
 model = mlflow.sklearn.load_model(CHAMPION)
@@ -246,6 +251,7 @@ test = spark.sql("""SELECT f.*, t.amount FROM globalbank_dev.ml.card_features f
                     JOIN globalbank_dev.silver.card_transactions t
                       USING (auth_id)
                     WHERE f.day = '2026-09-26'""").toPandas()
+mlflow.set_tracking_uri('databricks')
 mlflow.set_registry_uri('databricks-uc')
 CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'
 model = mlflow.sklearn.load_model(CHAMPION)

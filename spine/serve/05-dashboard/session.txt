@@ -1,2 +1,9 @@
 $ python -m globalbank.warehouse sql/gold/accounts.sql
+accounts  current  regions  segments
+    6535     5112        5         3
 $ python -m globalbank.dashboard
+globalbank statements: published, 2 datasets
+-- October card spend by region (region, card_eur)
+Central 2006642 · East 1893253 · North 1848065 · South 1924689 · West 2013243
+-- Closing balance by segment (segment, accounts, avg_closing_eur)
+standard 3532 1284 · plus 1278 5797 · premier 234 17817
