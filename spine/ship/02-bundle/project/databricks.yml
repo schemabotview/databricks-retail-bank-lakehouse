@@ -6,9 +6,6 @@ bundle:
 include:
   - resources/*.yml
 
-sync:
-  exclude: [.venv*, landing]
-
 variables:
   warehouse_id:
     lookup: {warehouse: Serverless Starter Warehouse}

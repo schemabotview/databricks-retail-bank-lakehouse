@@ -20,11 +20,11 @@ P = 'ship'
 
 DRIFT = '''"""Has the deployed job drifted from resources/nightly.yml? Someone clicks."""
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.jobs import JobSettings
 
-from globalbank.job import NAME, job_id, settings
+from globalbank.job import NAME, job_id
 
 w = WorkspaceClient()
+deployed = w.jobs.get(job_id(w)).settings  # as job.py deployed it from the repo
 # What a person did in the web UI, done here as the API call the UI makes:
 edited = w.jobs.get(job_id(w)).settings
 edited.max_concurrent_runs = 3
@@ -32,13 +32,12 @@ edited.tags = {'edited': 'by hand'}
 w.jobs.reset(job_id(w), new_settings=edited)
 print(f'{NAME}, edited in the workspace')
 
-code = settings(w).as_dict()
-live = w.jobs.get(job_id(w)).settings.as_dict()
+code, live = deployed.as_dict(), w.jobs.get(job_id(w)).settings.as_dict()
 for key in sorted(set(code) | set(live)):
-    if key in ('tasks', 'environments') or code.get(key) == live.get(key):
-        continue
-    print(f'  {key:<20} repo: {code.get(key, "-")!s:<10}'
-          f' workspace: {live.get(key)}')
+    if code.get(key) != live.get(key):
+        print(f'  {key:<20} repo: {code.get(key, "-")!s:<10}'
+              f' workspace: {live.get(key)}')
+print('resources/nightly.yml: unchanged; nothing records the edit')
 '''
 
 BUNDLE = """# Global Bank's lakehouse, as one bundle: the code, the pipeline, the nightly
@@ -48,9 +47,6 @@ bundle:
 
 include:
   - resources/*.yml
-
-sync:
-  exclude: [.venv*, landing]
 
 variables:
   warehouse_id:
@@ -64,6 +60,11 @@ targets:
     default: true
     presets: {name_prefix: "dev_${workspace.current_user.short_name}_"}
 #PROD#"""
+
+GITIGNORE = """# Never in git, and never synced by the bundle (it skips what git ignores).
+.venv*/
+landing/
+"""
 
 PROD = """  prod:
     mode: production  # another workspace, in a real bank
@@ -205,15 +206,16 @@ TESTENV = ['python -m venv .venv-test', '.venv-test/bin/pip install -q pyspark==
 if __name__ == '__main__':
     step(P, '01-drift', PARENT, ['globalbank/drift.py'], {'globalbank/drift.py': DRIFT},
          ['python -m globalbank.drift'], LAND + [q('python -m globalbank.deploy'), q('python -m globalbank.job deploy')])
-    step(P, '02-bundle', f'{P}/01-drift', ['databricks.yml', 'resources/globalbank_pipeline.yml'],
-         {'databricks.yml': BUNDLE.replace('#PROD#', ''), 'resources/globalbank_pipeline.yml': PIPELINE_YML},
+    step(P, '02-bundle', f'{P}/01-drift', ['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml'],
+         {'.gitignore': GITIGNORE, 'databricks.yml': BUNDLE.replace('#PROD#', ''),
+          'resources/globalbank_pipeline.yml': PIPELINE_YML},
          [f'{B} validate'], [], extra=GO)
     step(P, '03-resources', f'{P}/02-bundle', ['resources/dashboard.yml'], {'resources/dashboard.yml': DASHBOARD_YML},
          [f'{B} summary'], [], extra=GO)
     step(P, '04-targets', f'{P}/03-resources', ['databricks.yml'], {'databricks.yml': BUNDLE.replace('#PROD#', PROD)},
          [f'{B} validate -t dev | sed -n 1,5p', f'{B} validate -t prod | sed -n 1,5p'], [], extra=GO)
     step(P, '05-deploy-run', f'{P}/04-targets', ['globalbank/drift.py'], {'globalbank/drift.py': None},
-         [f'{B} deploy', f'{B} run globalbank_nightly | tail -1'], LAND,
+         [f'{B} deploy', f'{B} run globalbank_nightly 2>&1 | grep TERMINATED'], LAND,
          extra={'volatile': ['ts'], 'mask': [r'Files: \d+ uploaded']})
     step(P, '06-tests', f'{P}/05-deploy-run', ['requirements.txt', 'globalbank/transforms.py', 'tests/test_transforms.py',
                                                'tests/test_workspace.py'],

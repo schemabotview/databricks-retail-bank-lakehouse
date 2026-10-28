@@ -62,7 +62,7 @@ const drift1Scene: SceneModel = ideFrame({
 // §2 — a bundle: databricks.yml, and the resources it includes.
 const out2 = outputOf(s2, `${B} validate`)
 const bundle2Scene: SceneModel = ideFrame({
-  tree: tree(['databricks.yml', 'resources/globalbank_pipeline.yml', 'resources/nightly.yml', 'dashboards/'], 'databricks.yml', ['databricks.yml', 'resources/globalbank_pipeline.yml']),
+  tree: tree(['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml', 'resources/nightly.yml', 'dashboards/'], 'databricks.yml', ['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml']),
   editor: { file: 'databricks.yml', code: bundle2, lang: 'text', highlight: linesFrom(bundle2, 'bundle:', '  - resources/*.yml') },
   session: s2,
   side: [
@@ -141,8 +141,8 @@ const targets4: SceneModel = ideFrame({
 })
 
 // §5 — validate, deploy, run.
-const deploy5 = outputOf(s5, `${B} deploy`).split('\n').filter(Boolean)
-const run5 = outputOf(s5, `${B} run globalbank_nightly | tail -1`)
+const deploy5 = outputOf(s5, `${B} deploy`).split('\n').filter(Boolean).map((l) => l.replace(/ to \/Workspace\S+/, ' to the bundle folder'))
+const run5 = outputOf(s5, `${B} run globalbank_nightly 2>&1 | grep TERMINATED`)
 const state5 = run5.match(/"([^"]+)" (\w+)(?: (\w+))?/)
 const deployRun5: SceneModel = ideFrame({
   tree: tree(['databricks.yml', 'resources/nightly.yml', 'resources/globalbank_pipeline.yml', 'resources/dashboard.yml'], 'resources/nightly.yml'),

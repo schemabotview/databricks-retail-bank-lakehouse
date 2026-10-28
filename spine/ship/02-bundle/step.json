@@ -1,6 +1,7 @@
 {
  "from": "ship/01-drift",
  "changes": [
+  ".gitignore",
   "databricks.yml",
   "resources/globalbank_pipeline.yml"
  ],
