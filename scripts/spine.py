@@ -9,6 +9,10 @@ so a frame can only show what this script has verified.
   python3.12 scripts/spine.py            check every step (exit 1 on any difference)
   python3.12 scripts/spine.py --write    re-run every step and rewrite its session.txt / captures
   python3.12 scripts/spine.py start/03   only the steps whose path starts with an argument
+  python3.12 scripts/spine.py --write --as-is detect/06
+                                         only those steps, on the workspace AS IT STANDS: for a fix
+                                         replayed right after its chain, while the workspace still
+                                         holds the state the step continues from
 
 Ported from spark-ecommerce-analytics' spine.py (itself python-expense-tracker's); what differs is
 the platform's:
@@ -217,11 +221,12 @@ def chain_start(step: Path) -> list[Path]:
 
 
 REPLAYED: list[Path] = []  # this run's steps, in order: a continuing step's parent must be the last
+AS_IS = '--as-is' in sys.argv  # trust the workspace's state: no chain replayed before a step
 
 
 def replay(step: Path) -> tuple[str, dict[str, str]]:
     config = config_of(step)
-    if config.get('continues') and (not REPLAYED or REPLAYED[-1] != ROOT / config['from']):
+    if config.get('continues') and not AS_IS and (not REPLAYED or REPLAYED[-1] != ROOT / config['from']):
         sys.exit(f'✗ {step.relative_to(ROOT)} continues {config["from"]}, which was not replayed just before it')
     REPLAYED.append(step)
     session = (step / 'session.txt').read_text()
@@ -435,7 +440,7 @@ def main() -> int:
     every = sorted(p.parent for p in ROOT.glob('*/*/session.txt'))
     asked = {s for s in every if not only or any(str(s.relative_to(ROOT)).startswith(o) for o in only)}
     # A continuing step needs its chain replayed before it, in order: from the step that starts over.
-    steps = [s for s in every if s in {c for a in asked for c in chain_start(a)}]
+    steps = [s for s in every if s in (asked if AS_IS else {c for a in asked for c in chain_start(a)})]
     problems = 0
     # The chain is checked over EVERY step, whatever was asked for: a filtered run must not hide a
     # parent edited out from under its children.
