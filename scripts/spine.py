@@ -55,6 +55,12 @@ step.json (other keys, all optional):
                                 digits, hex, UUIDs and timestamps masked; or a list of only the
                                 kinds to mask, e.g. ["uuid"], ["ts"] or ["digits"]
   {"setup": ["cmd", ...]}       run silently before the transcript (after the venv)
+  {"continues": true}           a workspace step that starts from the workspace AS ITS PARENT LEFT
+                                IT: its setup holds only what it adds. A course resets and builds
+                                its lakehouse once, in its first step (or a step that must start
+                                over), and each step after it continues; asking for a continuing
+                                step replays its chain from that start, in order, so the state it
+                                starts from is still known — built once per chain, not per step.
   {"mask": ["RUNNING|STOPPED"]} regexes of what legitimately changes between runs: masked when
                                 comparing (a warehouse's state, a duration)
   {"generated": {"sf": 1, "from": "2026-10-01", "to": "2026-10-01", "only": ["card_auths"]}}
@@ -202,8 +208,22 @@ def venv_key(project: Path) -> str:
     return hashlib.sha256(req.read_bytes()).hexdigest()[:16]
 
 
+def chain_start(step: Path) -> list[Path]:
+    """The steps a continuing step's workspace state is built by: back to the step that starts over."""
+    chain = [step]
+    while config_of(chain[0]).get('continues'):
+        chain.insert(0, ROOT / config_of(chain[0])['from'])
+    return chain
+
+
+REPLAYED: list[Path] = []  # this run's steps, in order: a continuing step's parent must be the last
+
+
 def replay(step: Path) -> tuple[str, dict[str, str]]:
     config = config_of(step)
+    if config.get('continues') and (not REPLAYED or REPLAYED[-1] != ROOT / config['from']):
+        sys.exit(f'✗ {step.relative_to(ROOT)} continues {config["from"]}, which was not replayed just before it')
+    REPLAYED.append(step)
     session = (step / 'session.txt').read_text()
     home = SPINE_ROOT / 'home'
     shutil.rmtree(home, ignore_errors=True)
@@ -319,12 +339,16 @@ def lineage(step: Path) -> list[str]:
     if len(kinds) != 1:
         return [f'{name}: step.json needs exactly one of "first", "from", "lab" (has {kinds or "none"})']
     if 'from' not in kinds:
+        if config.get('continues'):
+            return [f'{name}: "continues" only means something with "from"']
         return [f'{name}: "changes" only means something with "from"'] if config.get('changes') else []
     parent = ROOT / config['from']
     if not (parent / 'session.txt').exists():
         return [f'{name}: "from" names {config["from"]}, which is not a step']
     if config_of(parent).get('lab'):
         return [f'{name}: "from" names a lab, which is outside the chain']
+    if config.get('continues') and not (config.get('workspace') and config_of(parent).get('workspace')):
+        return [f'{name}: "continues" needs a workspace step continuing a workspace step']
     changes = config.get('changes') or []
     if not changes:
         return [f'{name}: "from" without "changes" — a step that changes nothing is not a section']
@@ -409,7 +433,9 @@ def main() -> int:
         return 1
     only = [a for a in sys.argv[1:] if not a.startswith('--')]
     every = sorted(p.parent for p in ROOT.glob('*/*/session.txt'))
-    steps = [s for s in every if not only or any(str(s.relative_to(ROOT)).startswith(o) for o in only)]
+    asked = {s for s in every if not only or any(str(s.relative_to(ROOT)).startswith(o) for o in only)}
+    # A continuing step needs its chain replayed before it, in order: from the step that starts over.
+    steps = [s for s in every if s in {c for a in asked for c in chain_start(a)}]
     problems = 0
     # The chain is checked over EVERY step, whatever was asked for: a filtered run must not hide a
     # parent edited out from under its children.

@@ -72,9 +72,10 @@ if __name__ == '__main__':
         while not w.jobs.get_run(run.run_id).state.result_state:
             time.sleep(15)
         report(w, run)
-    elif verb == 'wait':  # for a run something else started
+    elif verb == 'wait':  # for the run a new file started
         for _ in range(60):
-            runs = list(w.jobs.list_runs(job_id=job_id(w), limit=1))
+            runs = [r for r in w.jobs.list_runs(job_id=job_id(w))
+                    if r.trigger and r.trigger.value == 'FILE_ARRIVAL']
             if runs and runs[0].state.result_state:
                 break
             time.sleep(15)

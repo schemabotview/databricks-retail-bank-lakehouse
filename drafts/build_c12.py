@@ -108,6 +108,7 @@ q = lambda c: c + ' > /dev/null'
 DAYS = [f'2026-10-0{d}' for d in range(1, 8)]
 SMALL = [RESET, CAT] + [x for d in DAYS for x in (f'bash land.sh {d} > /dev/null', q('python -m globalbank.land'))]
 T = 'globalbank_dev.bronze.card_auths'
+GO = {'continues': True}  # from the workspace as the step before left it
 
 if __name__ == '__main__':
     step(P, '01-cost', PARENT, ['globalbank/cost.py'], {'globalbank/cost.py': COST},
@@ -116,7 +117,7 @@ if __name__ == '__main__':
          {'globalbank/files.py': FILES, 'globalbank/optimize.py': OPTIMIZE},
          [f'python -m globalbank.files {T}', f'python -m globalbank.optimize {T}', f'python -m globalbank.files {T}'], SMALL)
     step(P, '03-liquid-clustering', f'{P}/02-small-files', ['globalbank/cluster.py'], {'globalbank/cluster.py': CLUSTER},
-         ['python -m globalbank.cluster'], SMALL)
+         ['python -m globalbank.cluster'], [], extra=GO)
     step(P, '04-predictive', f'{P}/03-liquid-clustering', ['globalbank/predictive.py'], {'globalbank/predictive.py': PREDICTIVE},
-         ['python -m globalbank.predictive'], SMALL + [q('python -m globalbank.cluster')])
+         ['python -m globalbank.predictive'], [], extra=GO)
     print('built')

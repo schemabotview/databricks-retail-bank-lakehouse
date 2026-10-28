@@ -5,7 +5,6 @@
  ],
  "workspace": true,
  "venv": true,
- "setup": [
-  "python \"$SPINE_REPO/scripts/ws_reset.py\""
- ]
+ "setup": [],
+ "continues": true
 }

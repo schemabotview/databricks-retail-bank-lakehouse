@@ -199,6 +199,7 @@ LAND = [RESET, CAT, 'bash land.sh 2026-10-22 > /dev/null', 'bash land.sh 2026-09
         'bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null', 'bash land.sh 2026-10-01 chargebacks > /dev/null',
         'bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null']
 B = 'databricks bundle'
+GO = {'continues': True}  # from the workspace as the step before left it
 TESTENV = ['python -m venv .venv-test', '.venv-test/bin/pip install -q pyspark==4.2.0 pytest==8.4.2']
 
 if __name__ == '__main__':
@@ -206,11 +207,11 @@ if __name__ == '__main__':
          ['python -m globalbank.drift'], LAND + [q('python -m globalbank.deploy'), q('python -m globalbank.job deploy')])
     step(P, '02-bundle', f'{P}/01-drift', ['databricks.yml', 'resources/globalbank_pipeline.yml'],
          {'databricks.yml': BUNDLE.replace('#PROD#', ''), 'resources/globalbank_pipeline.yml': PIPELINE_YML},
-         [f'{B} validate'], [RESET])
+         [f'{B} validate'], [], extra=GO)
     step(P, '03-resources', f'{P}/02-bundle', ['resources/dashboard.yml'], {'resources/dashboard.yml': DASHBOARD_YML},
-         [f'{B} summary'], [RESET])
+         [f'{B} summary'], [], extra=GO)
     step(P, '04-targets', f'{P}/03-resources', ['databricks.yml'], {'databricks.yml': BUNDLE.replace('#PROD#', PROD)},
-         [f'{B} validate -t dev | sed -n 1,5p', f'{B} validate -t prod | sed -n 1,5p'], [RESET])
+         [f'{B} validate -t dev | sed -n 1,5p', f'{B} validate -t prod | sed -n 1,5p'], [], extra=GO)
     step(P, '05-deploy-run', f'{P}/04-targets', ['globalbank/drift.py'], {'globalbank/drift.py': None},
          [f'{B} deploy', f'{B} run globalbank_nightly | tail -1'], LAND,
          extra={'volatile': ['ts'], 'mask': [r'Files: \d+ uploaded']})
@@ -220,8 +221,8 @@ if __name__ == '__main__':
           'tests/test_transforms.py': TEST_LOCAL, 'tests/test_workspace.py': TEST_WS},
          ['.venv-test/bin/python -m pytest -q tests/test_transforms.py 2>&1 | tail -1',
           'python -m pytest -q tests/test_workspace.py 2>&1 | tail -1'],
-         LAND + [q(f'{B} deploy'), q(f'{B} run globalbank_pipeline')] + TESTENV,
-         extra={'mask': [r'in [\d.]+s']})
+         TESTENV,
+         extra={**GO, 'mask': [r'in [\d.]+s']})
     step(P, '07-ci', f'{P}/06-tests', ['.github/workflows/deploy.yml'], {'.github/workflows/deploy.yml': WORKFLOW},
-         [f'{B} validate -t prod | tail -1'], [RESET])
+         [f'{B} validate -t prod | tail -1'], [], extra=GO)
     print('built')

@@ -201,9 +201,10 @@ if __name__ == '__main__':
         report(w, run)
 '''
 
-JOB_WAIT = """    elif verb == 'wait':  # for a run something else started
+JOB_WAIT = """    elif verb == 'wait':  # for the run a new file started
         for _ in range(60):
-            runs = list(w.jobs.list_runs(job_id=job_id(w), limit=1))
+            runs = [r for r in w.jobs.list_runs(job_id=job_id(w))
+                    if r.trigger and r.trigger.value == 'FILE_ARRIVAL']
             if runs and runs[0].state.result_state:
                 break
             time.sleep(15)
@@ -266,6 +267,7 @@ LAND = [RESET, CAT, 'bash land.sh 2026-10-31 > /dev/null', 'bash land.sh 2026-09
 SETTLED = ['bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null']
 UP = [q('python -m globalbank.deploy')]
 BASE = LAND + SETTLED + UP
+GO = {'continues': True}  # from the workspace as the step before left it
 
 if __name__ == '__main__':
     step(P, '01-nightly', PARENT, ['requirements.txt', 'resources/nightly.yml', 'sql/fraud/flags.sql',
@@ -274,10 +276,10 @@ if __name__ == '__main__':
           'jobs/check.py': CHECK, 'globalbank/job.py': JOB},
          [f'{J} deploy'], BASE)
     step(P, '02-run', f'{P}/01-nightly', ['globalbank/job.py'], {'globalbank/job.py': JOB + JOB_WAIT},
-         [f'{J} run'], BASE + [q(f'{J} deploy')], extra={'volatile': ['digits']})
+         [f'{J} run'], [q(f'{J} deploy')], extra={**GO, 'volatile': ['digits']})
     step(P, '03-file-arrival', f'{P}/02-run', ['resources/nightly.yml'], {'resources/nightly.yml': nightly(trigger=True)},
          [f'{J} deploy | sed -n 1p', 'sleep 90', 'bash land.sh 2026-11-01 settlements | wc -l', f'{J} wait'],
-         BASE)
+         [], extra=GO)
     step(P, '04-repair', f'{P}/03-file-arrival', ['globalbank/job.py'], {'globalbank/job.py': JOB + JOB_WAIT + JOB_REPAIR},
          [f'{J} run', 'bash land.sh 2026-10-31 settlements | wc -l', f'{J} repair'],
          LAND + ['bash land.sh 2026-09-02 settlements 2026-10-30 > /dev/null'] + UP + [q(f'{J} deploy')])
@@ -285,15 +287,15 @@ if __name__ == '__main__':
          {'resources/nightly.yml': nightly(trigger=True, month_end=True), 'sql/gold/month_end.sql': MONTH_END,
           'sql/gold/month_end_rows.sql': COUNT_SQL},
          [f'{J} run | sed -n 1p', f'{J} run | sed -n 1p', 'python -m globalbank.warehouse sql/gold/month_end_rows.sql'],
-         BASE + [q(f'{J} deploy')])
+         [q(f'{J} wait'), q(f'{J} deploy')], extra=GO)  # a run the 31st's file started, finished first
     step(P, '06-parameters', f'{P}/05-idempotency', ['resources/nightly.yml', 'sql/gold/month_end.sql', 'globalbank/job.py'],
          {'resources/nightly.yml': nightly(trigger=True, month_end=True, params=True), 'sql/gold/month_end.sql': MONTH_END_FIXED,
           'globalbank/job.py': JOB + JOB_WAIT + JOB_REPAIR + JOB_OUTPUT},
          [f'{J} run run_date=2026-10-31 | sed -n 1p', f'{J} run run_date=2026-10-31 | sed -n 1p', f'{J} output check',
           'python -m globalbank.warehouse sql/gold/month_end_rows.sql'],
-         BASE + [q(f'{J} deploy')])
+         [q(f'{J} deploy')], extra=GO)
     step(P, '07-run-as', f'{P}/06-parameters', ['resources/nightly.yml', 'globalbank/job.py'],
          {'resources/nightly.yml': nightly(trigger=True, month_end=True, params=True, owner=True),
           'globalbank/job.py': JOB + JOB_WAIT + JOB_REPAIR + JOB_OUTPUT + JOB_WHO},
-         [f'{J} deploy | sed -n 1p', f'{J} who'], BASE)
+         [f'{J} deploy | sed -n 1p', f'{J} who'], [], extra=GO)
     print('built')

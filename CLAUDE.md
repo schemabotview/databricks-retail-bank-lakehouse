@@ -146,9 +146,15 @@ workspace adds:
   by hand in a scene.
 - **Volatile by nature**: run ids, update ids, job ids, timestamps, durations, URLs. Masked in the
   comparison; a scene READS such a value from the session, and narration never says it.
-- **Every step starts from a known workspace state**: a step's setup drops and recreates what it
-  owns under `globalbank_dev`, so replays do not depend on order or on a previous run.
+- **A chain starts from a known workspace state, and builds on it** (2026-10-28): a course's first
+  step (or a step that must start over: 10.4 needs 31 October missing, 11.5 hands the pipeline to
+  the bundle) resets with `ws_reset.py` and builds the lakehouse; every step after it is
+  `{"continues": true}`, its setup only what it adds. Asking `spine.py` for a continuing step
+  replays its chain from that start, in order. Rebuilding per step built Course 9's lakehouse 8
+  times and spent the whole daily quota (2026-10-27).
 - **The daily fair-usage quota is a budget**: keep data small, and replay one course at a time.
+  When it is spent, compute is refused until the next day ("you have hit your free daily limit");
+  check a change offline (`databricks bundle validate`, local tests) before replaying it.
 
 ## Frames
 

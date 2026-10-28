@@ -402,8 +402,7 @@ BASE = [RESET, CAT, 'bash land.sh 2026-10-29 card_auths 2026-10-31 > /dev/null',
 MONEY = ['bash land.sh 2026-09-02 settlements 2026-10-31 > /dev/null',
          'bash land.sh 2026-09-01 postings 2026-10-31 > /dev/null']
 PIPE = [q('python -m globalbank.deploy'), q('python -m globalbank.run')]
-BUILT = BASE + MONEY + PIPE + [q(f'{WH} sql/gold/daily_balances.sql')]
-STATED = BUILT + [q(f'{WH} sql/gold/monthly_statements.sql')]
+GO = {'continues': True}  # from the workspace as the step before left it
 
 step(P, '01-warehouse', PARENT, ['globalbank/warehouse.py', 'sql/gold/card_spend.sql'],
      {'globalbank/warehouse.py': WAREHOUSE, 'sql/gold/card_spend.sql': CARD_SPEND},
@@ -416,26 +415,26 @@ step(P, '02-daily-balances', f'{P}/01-warehouse',
       'pipelines/silver.py': read(f'{PARENT}/project/pipelines/silver.py') + SILVER_ADD,
       'sql/gold/daily_balances.sql': BALANCES, 'sql/gold/balance_of.sql': BALANCE_OF},
      [f'{WH} sql/gold/daily_balances.sql', f'{WH} sql/gold/balance_of.sql account=A0000011'],
-     BASE + MONEY + PIPE)
+     [CAT] + MONEY + PIPE, extra=GO)
 step(P, '03-statements', f'{P}/02-daily-balances', ['sql/gold/monthly_statements.sql', 'sql/gold/statement_of.sql'],
      {'sql/gold/monthly_statements.sql': STATEMENTS, 'sql/gold/statement_of.sql': STATEMENT_OF},
-     [f'{WH} sql/gold/monthly_statements.sql', f'{WH} sql/gold/statement_of.sql account=A0000011'], BUILT)
+     [f'{WH} sql/gold/monthly_statements.sql', f'{WH} sql/gold/statement_of.sql account=A0000011'], [], extra=GO)
 step(P, '04-as-of', f'{P}/03-statements', ['sql/gold/regulatory_snapshot.sql', 'globalbank/asof.py'],
      {'sql/gold/regulatory_snapshot.sql': SNAPSHOT, 'globalbank/asof.py': ASOF},
      ['bash land.sh 2026-11-01 settlements 2026-11-03 | wc -l', 'python -m globalbank.run | sed -n 1p',
       q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'python -m globalbank.asof'],
-     BUILT + [q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'sleep 5'],
-     extra={'mask': [r'written \d{4}-\d{2}-\d{2} \d{2}:\d{2}']})
+     [q(f'{WH} sql/gold/regulatory_snapshot.sql'), 'sleep 5'],
+     extra={**GO, 'mask': [r'written \d{4}-\d{2}-\d{2} \d{2}:\d{2}']})
 step(P, '05-dashboard', f'{P}/04-as-of', ['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json',
                                            'globalbank/dashboard.py'],
      {'sql/gold/accounts.sql': ACCOUNTS, 'dashboards/statements.lvdash.json': lvdash(),
       'globalbank/dashboard.py': DASHBOARD},
-     [f'{WH} sql/gold/accounts.sql', 'python -m globalbank.dashboard'], STATED)
+     [f'{WH} sql/gold/accounts.sql', 'python -m globalbank.dashboard'], [], extra=GO)
 step(P, '06-alerts', f'{P}/05-dashboard', ['sql/alerts/overdrawn.sql', 'globalbank/alert.py'],
      {'sql/alerts/overdrawn.sql': OVERDRAWN, 'globalbank/alert.py': ALERT},
-     [f'{WH} sql/alerts/overdrawn.sql', 'python -m globalbank.alert'], BUILT + [q(f'{WH} sql/gold/accounts.sql')])
+     [f'{WH} sql/alerts/overdrawn.sql', 'python -m globalbank.alert'], [], extra=GO)
 step(P, '07-slow-query', f'{P}/06-alerts', ['sql/gold/point.sql', 'globalbank/slow.py'],
      {'sql/gold/point.sql': POINT, 'globalbank/slow.py': SLOW},
-     [f'{WH} sql/gold/point.sql', 'python -m globalbank.slow'], STATED + ['sleep 60'],
-     extra={'volatile': ['digits']})
+     [f'{WH} sql/gold/point.sql', 'python -m globalbank.slow'], ['sleep 60'],
+     extra={**GO, 'volatile': ['digits']})
 print('built')

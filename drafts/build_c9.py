@@ -269,8 +269,7 @@ SMALL = ['bash land.sh 2026-09-01 core_cdc 2026-09-02 > /dev/null', 'bash land.s
          'bash land.sh 2026-09-01 postings > /dev/null', 'bash land.sh 2026-10-01 chargebacks > /dev/null']
 PIPE = [q('python -m globalbank.deploy'), q('python -m globalbank.run')]
 BASE = [RESET, CAT] + DAYS + SMALL + PIPE
-FEAT = BASE + [q('python -m globalbank.features')]
-TRAINED = FEAT + [q('python -m globalbank.train'), q('python -m globalbank.registry champion 1')]
+GO = {'continues': True}  # from the workspace as the step before left it
 
 PARENT_PIPES = {f'pipelines/{n}.py': read(f'{PARENT}/project/pipelines/{n}.py') for n in ('bronze', 'silver')}
 if __name__ == '__main__':
@@ -279,19 +278,19 @@ if __name__ == '__main__':
           'pipelines/silver.py': PARENT_PIPES['pipelines/silver.py'] + SILVER_ADD, 'globalbank/ring.py': RING},
          ['python -m globalbank.ring 2026-10-22'], BASE)
     step(P, '02-rules', f'{P}/01-card-testing', ['sql/fraud/velocity.sql'], {'sql/fraud/velocity.sql': RULES_SQL},
-         ['python -m globalbank.warehouse sql/fraud/velocity.sql'], BASE)
+         ['python -m globalbank.warehouse sql/fraud/velocity.sql'], [], extra=GO)
     step(P, '03-streaming-rule', f'{P}/02-rules', ['globalbank/stream.py'], {'globalbank/stream.py': STREAM},
-         ['python -m globalbank.stream'], BASE)
+         ['python -m globalbank.stream'], [], extra=GO)
     step(P, '04-features', f'{P}/03-streaming-rule', ['globalbank/features.py'], {'globalbank/features.py': FEATURES},
-         ['python -m globalbank.features'], BASE)
+         ['python -m globalbank.features'], [], extra=GO)
     step(P, '05-mlflow', f'{P}/04-features', ['requirements.txt', 'globalbank/train.py'],
          {'requirements.txt': REQUIREMENTS, 'globalbank/train.py': TRAIN},
-         ['python -m globalbank.train'], FEAT, extra={'mask': [r'version \d+']})
+         ['python -m globalbank.train'], [], extra={**GO, 'mask': [r'version \d+']})
     step(P, '06-registry', f'{P}/05-mlflow', ['globalbank/registry.py'], {'globalbank/registry.py': REGISTRY},
          ['python -m globalbank.registry', 'python -m globalbank.registry champion 1'],
-         FEAT + [q('python -m globalbank.train')])
+         [], extra=GO)
     step(P, '07-score', f'{P}/06-registry', ['globalbank/score.py'], {'globalbank/score.py': SCORE},
-         ['python -m globalbank.score 2026-10-22 0.9'], TRAINED)
+         ['python -m globalbank.score 2026-10-22 0.9'], [], extra=GO)
     step(P, '08-tradeoff', f'{P}/07-score', ['globalbank/tradeoff.py'], {'globalbank/tradeoff.py': TRADEOFF},
-         ['python -m globalbank.tradeoff'], TRAINED)
+         ['python -m globalbank.tradeoff'], [], extra=GO)
     print('built')
