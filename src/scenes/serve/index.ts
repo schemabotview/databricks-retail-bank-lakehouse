@@ -69,7 +69,7 @@ const warehouse1Scene: SceneModel = ideFrame({
 // §2 — daily balances: one account's October, a week to a row.
 const built2 = grid(outputOf(s2, `${WH} sql/gold/daily_balances.sql`))
 const weeks2 = grid(outputOf(s2, `${WH} sql/gold/balance_of.sql account=A0000011`))
-const days2 = weeks2.rows.flatMap((r) => r[1].split(/\s+/).map(num))
+const days2 = weeks2.rows.flatMap((r) => r.slice(1).map(num)) // a week to a row, a day to a column
 const top2 = Math.ceil(Math.max(...days2) / 1000) * 1000
 const low2 = Math.min(0, Math.floor(Math.min(...days2) / 1000) * 1000)
 const balances2Scene: SceneModel = ideFrame({
