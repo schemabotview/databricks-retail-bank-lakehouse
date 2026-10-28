@@ -27,7 +27,8 @@ and pinned. Sister repos:
 
 2026-10-26: infra ported, `globalbank_sim` built and verified, Course 1 authored. 2026-10-27: the
 owner's Free Edition workspace connected (`DATABRICKS_HOST` / `DATABRICKS_TOKEN` as environment
-secrets); Course 2 authored on it. The owner reviews at the end (2026-10-26: "do course by course
+secrets); Course 2 authored on it. 2026-10-28: Courses 8–12 authored on the second workspace; all 12 courses, 86 sections, are
+authored, replayed, rendered and looked at. Narration audio is not made. The owner reviews at the end (2026-10-26: "do course by course
 till end").
 
 **The owner's workspace holds other catalogs** (personal and training ones). Never list catalogs,
@@ -48,7 +49,7 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | 9 | `detect` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio (scoring on the laptop) |
 | 10 | `schedule` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (10.4 a concept scene with the real output) |
 | 11 | `ship` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (prod validated, not deployed; 11.6 unit tests run local; 11.7 deploy documented) |
-| 12 | `operate` | 6 | not started |
+| 12 | `operate` | 6 | authored, replayed on the second workspace, rendered, looked at; no audio (12.5 the app map with real output; 12.6 documented) |
 
 ## Workspace quotas (learned 2026-10-27)
 

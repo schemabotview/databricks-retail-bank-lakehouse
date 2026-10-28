@@ -387,6 +387,11 @@ from GitHub needs a service principal's OAuth secret, which needs the account co
 
 **12. `operate` · Operate it, and pay for it · 6** — maintenance by layer
 
+(2026-10-28: `system.billing.usage` arrives hours after the work, so 12.1 shows the bill as it stands
+and the hour it reaches. A week of authorizations is one file after `OPTIMIZE`, so 12.3's tables set
+a small `delta.targetFileSize` to have files to skip. Predictive optimization had run nothing on
+tables hours old; 12.4 says so.)
+
 | # | Section | Step | Side pane |
 | --- | --- | --- | --- |
 | 1 | What it costs | `system.billing.usage` by job and pipeline, in DBUs | plot: DBUs per resource |

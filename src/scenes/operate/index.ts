@@ -1,4 +1,5 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
+import { view } from '../fold'
 import { ideFrame, linesFrom } from '../ide'
 import { outputOf } from '../lab'
 import { appMap } from '../map'
@@ -35,10 +36,10 @@ const rows1 = all(out1, /^\s+(\S+)\s+([\d.]+)$/gm).map((m) => ({ product: m[1], 
 const top1 = Math.ceil(Math.max(...rows1.map((r) => r.dbus)) / 2) * 2 || 2
 // What each billing product is (documented, docs.databricks.com, checked 2026-10-28).
 const MEANS: Record<string, string> = {
-  INTERACTIVE: 'serverless compute: Databricks Connect, every script',
-  DEFAULT_STORAGE: 'Default Storage: the managed tables’ files',
-  PREDICTIVE_OPTIMIZATION: 'the platform’s own table maintenance',
-  GENIE: 'AI/BI Genie, the workspace’s assistant',
+  INTERACTIVE: 'serverless compute: every script',
+  DEFAULT_STORAGE: 'the managed tables’ files',
+  PREDICTIVE_OPTIMIZATION: 'automatic table maintenance',
+  GENIE: 'AI/BI Genie',
   DLT: 'Lakeflow pipelines (Course 7)',
   SQL: 'the SQL warehouse (Course 8)',
   JOBS: 'Lakeflow Jobs (Course 10)',
@@ -50,7 +51,7 @@ const cost1Scene: SceneModel = ideFrame({
   side: [
     {
       type: 'plot', id: 'dbus', compact: true, title: `${head1[1]} DBUs since 27 October, by product`,
-      x: { labels: rows1.map((r) => r.product.toLowerCase().replace(/_/g, ' ')) }, y: { min: 0, max: top1, step: top1 / 4 },
+      x: { labels: rows1.map((r) => ({ PREDICTIVE_OPTIMIZATION: 'pred. opt.', DEFAULT_STORAGE: 'storage' } as Record<string, string>)[r.product] ?? r.product.toLowerCase()) }, y: { min: 0, max: top1, step: top1 / 4 },
       series: [{ kind: 'bar', points: rows1.map((r, i) => [i, r.dbus] as [number, number]), tone: 'consume' }],
     },
     {
@@ -92,7 +93,7 @@ const out3 = outputOf(s3, 'python -m globalbank.cluster')
 const read3 = all(out3, /^silver\.auths_(\w+)\s+files read\s+(\d+), skipped\s+(\d+)$/gm).map((m) => ({ t: m[1], read: Number(m[2]), skipped: Number(m[3]) }))
 const cluster3Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/cluster.py', 'globalbank/optimize.py'], 'globalbank/cluster.py', ['globalbank/cluster.py']),
-  editor: { file: 'globalbank/cluster.py', code: cluster3, highlight: linesFrom(cluster3, "for name, layout in (('by_arrival', ''), ('clustered',", "'CLUSTER BY (merchant_id, auth_ts)')):") },
+  editor: { file: 'globalbank/cluster.py', code: cluster3, ...view(cluster3, 'spark = get_spark()'), highlight: linesFrom(cluster3, "for name, layout in (('by_arrival', ''), ('clustered',", "'CLUSTER BY (merchant_id, auth_ts)')):") },
   session: s3,
   side: [
     {
@@ -105,7 +106,7 @@ const cluster3Scene: SceneModel = ideFrame({
     },
     {
       type: 'group', id: 'how', title: 'CLUSTER BY (merchant_id, auth_ts)', icon: 'layers', tone: 'store', ...FILL, children: [
-        { type: 'item', id: 'h-skew', title: 'M0001: one supermarket, ~20% of rows', sub: 'by arrival, it is in every file', icon: 'building' },
+        { type: 'item', id: 'h-skew', title: 'M0001: one supermarket, ~20% of rows', sub: 'by arrival, mixed in with every other merchant', icon: 'building' },
         { type: 'item', id: 'h-cluster', title: 'clustered: rows with near keys together', sub: 'each file covers a narrow range', icon: 'layers' },
         { type: 'item', id: 'h-skip', title: 'the query skips the other files', sub: 'by their min / max statistics', icon: 'filter' },
       ],
@@ -142,6 +143,7 @@ const predictive4Scene: SceneModel = ideFrame({
         { id: 'w-stats', cells: ['statistics', 'ANALYZE', 'keeps them current'] },
       ],
     },
+    { type: 'note', id: 'note', tone: 'infra', text: 'No operations yet: predictive optimization acts on managed tables once they have lived long enough to show how they are used. These are hours old.' },
   ],
 })
 

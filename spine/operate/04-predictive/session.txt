@@ -1,4 +1,4 @@
 $ python -m globalbank.predictive
 Predictive Optimization: ENABLE
 operations on globalbank_dev so far: 0 kinds
-silver.auths_clustered, by operation: CREATE OR REPLACE TABLE AS SELECT 1, OPTIMIZE 2
+silver.auths_clustered, by operation: CREATE OR REPLACE TABLE AS SELECT 2, OPTIMIZE 4
