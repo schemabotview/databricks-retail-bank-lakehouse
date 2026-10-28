@@ -5,7 +5,7 @@ spark = get_spark()
 info = spark.sql('DESCRIBE SCHEMA EXTENDED globalbank_dev.silver').collect()
 for r in info:
     if 'Predictive' in r[0]:
-        print(f'{r[0]}: {r[1]}')
+        print(f"{r[0]}: {r[1].split(' (')[0]}")  # not the metastore's name
 ops = spark.sql("""
     SELECT operation_type, count(*) AS n
     FROM system.storage.predictive_optimization_operations_history

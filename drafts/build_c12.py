@@ -13,19 +13,20 @@ from build_c5 import CAT, RESET, step  # noqa: E402
 PARENT = 'ship/07-ci'
 P = 'operate'
 
-COST = '''"""This week's cost in DBUs by product, from the bill itself."""
+COST = '''"""What the lakehouse has cost here, in DBUs, from the bill itself."""
 from globalbank.session import get_spark
 
 spark = get_spark()
 rows = spark.sql("""
-    SELECT billing_origin_product AS product, sku_name,
-           round(sum(usage_quantity), 2) AS dbus
+    SELECT billing_origin_product AS product,
+           round(sum(usage_quantity), 2) AS dbus, max(usage_end_time) AS last
     FROM system.billing.usage
-    WHERE usage_date >= current_date() - INTERVAL 7 DAYS
+    WHERE usage_date >= DATE'2026-10-27'  -- the course on this workspace
     GROUP BY ALL ORDER BY dbus DESC""").collect()
-print(f'{sum(r.dbus for r in rows):.2f} DBUs in 7 days, by product:')
-for r in rows[:8]:
-    print(f'  {r.product:<20}{r.sku_name[:38]:<40}{r.dbus:>8.2f}')
+print(f'{sum(r.dbus for r in rows):.2f} DBUs since 27 October,'
+      f' billed up to {max(r.last for r in rows):%d %b %H:%M}:')
+for r in rows:
+    print(f'  {r.product:<26}{r.dbus:>8.2f}')
 '''
 
 FILES = '''"""A table's files: how many, how big. Small files make every read slower."""
@@ -62,23 +63,28 @@ from globalbank.warehouse import run
 BRONZE = 'globalbank_dev.bronze.card_auths'
 QUERY = """SELECT count(*), sum(amount) FROM {} WHERE merchant_id = 'M0001'
            AND to_date(auth_ts) = '2026-10-03'"""
+SMALL = "TBLPROPERTIES ('delta.targetFileSize' = '128kb')"  # files to skip
 spark = get_spark()
 for name, layout in (('by_arrival', ''), ('clustered',
                                           'CLUSTER BY (merchant_id, auth_ts)')):
     spark.sql(f"""CREATE OR REPLACE TABLE globalbank_dev.silver.auths_{name}
-                  {layout} AS SELECT * FROM {BRONZE}""")
+                  {layout} {SMALL} AS SELECT * FROM {BRONZE}""")
     spark.sql(f'OPTIMIZE globalbank_dev.silver.auths_{name}')
 w = WorkspaceClient()
 for name in ('by_arrival', 'clustered'):
     run(w, QUERY.format(f'globalbank_dev.silver.auths_{name}'))
-time.sleep(150)  # the query history arrives a few minutes later
-_, rows = run(w, """
-    SELECT regexp_extract(statement_text, 'auths_(\\\\w+)', 1) AS t,
-           read_files, pruned_files
-    FROM system.query.history
-    WHERE statement_text LIKE '%M0001%auths_%'
-      AND start_time > current_timestamp() - INTERVAL 15 MINUTES
-    ORDER BY start_time DESC LIMIT 2""")
+for _ in range(40):  # the query history arrives some minutes later
+    _, rows = run(w, """
+        SELECT regexp_extract(statement_text, 'auths_([a-z_]+)', 1) AS t,
+               read_files, pruned_files
+        FROM system.query.history
+        WHERE statement_text LIKE '%M0001%auths_%'
+          AND statement_text NOT LIKE '%system.query%'
+          AND start_time > current_timestamp() - INTERVAL 30 MINUTES
+        ORDER BY start_time DESC LIMIT 2""")
+    if len(rows) == 2:
+        break
+    time.sleep(30)
 for t, read, pruned in sorted(rows):
     print(f'silver.auths_{t:<11} files read {read:>3}, skipped {pruned:>3}')
 '''
@@ -90,7 +96,7 @@ spark = get_spark()
 info = spark.sql('DESCRIBE SCHEMA EXTENDED globalbank_dev.silver').collect()
 for r in info:
     if 'Predictive' in r[0]:
-        print(f'{r[0]}: {r[1]}')
+        print(f"{r[0]}: {r[1].split(' (')[0]}")  # not the metastore's name
 ops = spark.sql("""
     SELECT operation_type, count(*) AS n
     FROM system.storage.predictive_optimization_operations_history

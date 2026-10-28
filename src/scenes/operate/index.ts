@@ -28,30 +28,36 @@ const tree = (files: string[], active: string, isNew: string[] = []) =>
   })
 const T = 'globalbank_dev.bronze.card_auths'
 
-// §1 — what it costs: DBUs by product, from system.billing.usage.
+// §1 — what it costs: DBUs by product, from system.billing.usage (which lags the work by hours).
 const out1 = outputOf(s1, 'python -m globalbank.cost')
-const total1 = out1.match(/^([\d.]+) DBUs in 7 days/m)![1]
-const rows1 = all(out1, /^\s+(\S+)\s+(\S+)\s+([\d.]+)$/gm).map((m) => ({ product: m[1], sku: m[2], dbus: Number(m[3]) }))
-const top1 = Math.ceil(Math.max(...rows1.map((r) => r.dbus)) / 5) * 5 || 5
+const head1 = out1.match(/^([\d.]+) DBUs since 27 October, billed up to (.*):$/m)!
+const rows1 = all(out1, /^\s+(\S+)\s+([\d.]+)$/gm).map((m) => ({ product: m[1], dbus: Number(m[2]) }))
+const top1 = Math.ceil(Math.max(...rows1.map((r) => r.dbus)) / 2) * 2 || 2
+// What each billing product is (documented, docs.databricks.com, checked 2026-10-28).
+const MEANS: Record<string, string> = {
+  INTERACTIVE: 'serverless compute: Databricks Connect, every script',
+  DEFAULT_STORAGE: 'Default Storage: the managed tables’ files',
+  PREDICTIVE_OPTIMIZATION: 'the platform’s own table maintenance',
+  GENIE: 'AI/BI Genie, the workspace’s assistant',
+  DLT: 'Lakeflow pipelines (Course 7)',
+  SQL: 'the SQL warehouse (Course 8)',
+  JOBS: 'Lakeflow Jobs (Course 10)',
+}
 const cost1Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/cost.py'], 'globalbank/cost.py', ['globalbank/cost.py']),
-  editor: { file: 'globalbank/cost.py', code: cost1, highlight: linesFrom(cost1, 'SELECT billing_origin_product', 'GROUP BY ALL ORDER BY dbus DESC') },
+  editor: { file: 'globalbank/cost.py', code: cost1, highlight: linesFrom(cost1, 'SELECT billing_origin_product AS product', 'GROUP BY ALL ORDER BY dbus DESC') },
   session: s1,
   side: [
     {
-      type: 'plot', id: 'dbus', compact: true, title: `${total1} DBUs in 7 days, by product`,
+      type: 'plot', id: 'dbus', compact: true, title: `${head1[1]} DBUs since 27 October, by product`,
       x: { labels: rows1.map((r) => r.product.toLowerCase().replace(/_/g, ' ')) }, y: { min: 0, max: top1, step: top1 / 4 },
       series: [{ kind: 'bar', points: rows1.map((r, i) => [i, r.dbus] as [number, number]), tone: 'consume' }],
     },
     {
-      type: 'table', id: 'what', title: 'Where the DBUs went', tone: 'consume', columns: ['product', 'what in this course'], rows: [
-        { id: 'w-int', cells: ['INTERACTIVE', 'Databricks Connect: every script'] },
-        { id: 'w-dlt', cells: ['DLT', 'globalbank_pipeline (Course 7)'] },
-        { id: 'w-sql', cells: ['SQL', 'the warehouse: gold (Course 8)'] },
-        { id: 'w-jobs', cells: ['JOBS', 'the nightly job (Course 10)'] },
-      ],
+      type: 'table', id: 'what', title: 'What each line of the bill is', tone: 'consume', columns: ['product', 'what it is'],
+      rows: rows1.map((r) => ({ id: `w-${r.product}`, cells: [r.product, MEANS[r.product] ?? 'see the billing docs'] })),
     },
-    { type: 'note', id: 'note', tone: 'consume', text: 'Cost is shown in DBUs, the platform’s own unit, from the bill’s system table. Prices depend on the contract and the cloud, so this course never quotes them.' },
+    { type: 'note', id: 'note', tone: 'consume', text: `The bill reaches ${head1[2]}: system.billing.usage arrives hours after the work, so the latest pipeline, warehouse and job runs are not on it yet. Cost is shown in DBUs; prices depend on the contract, and this course never quotes them.` },
   ],
 })
 
