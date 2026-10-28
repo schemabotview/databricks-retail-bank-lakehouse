@@ -1,53 +1,8 @@
 $ python -m globalbank.tradeoff
-Traceback (most recent call last):
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/registry.py", line 81, in get_store_builder
-    store_builder = self._registry[scheme]
-                    ~~~~~~~~~~~~~~^^^^^^^^
-KeyError: 'sqlite'
-
-During handling of the above exception, another exception occurred:
-
-Traceback (most recent call last):
-  File "<frozen runpy>", line 198, in _run_module_as_main
-  File "<frozen runpy>", line 88, in _run_code
-  File "/home/ana/globalbank/globalbank/tradeoff.py", line 20, in <module>
-    model = mlflow.sklearn.load_model(CHAMPION)
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/sklearn/__init__.py", line 779, in load_model
-    local_model_path = _download_artifact_from_uri(artifact_uri=model_uri, output_path=dst_path)
-                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/artifact_utils.py", line 117, in _download_artifact_from_uri
-    repo = get_artifact_repository(
-           ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/store/artifact/artifact_repository_registry.py", line 163, in get_artifact_repository
-    return _artifact_repository_registry.get_artifact_repository(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/store/artifact/artifact_repository_registry.py", line 90, in get_artifact_repository
-    repository_instance = repository(
-                          ^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/store/artifact/models_artifact_repo.py", line 53, in __init__
-    self.repo = UnityCatalogModelsArtifactRepository(
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/store/artifact/unity_catalog_models_artifact_repo.py", line 98, in __init__
-    self.client = MlflowClient(registry_uri=self.registry_uri)
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/client.py", line 257, in __init__
-    self._tracking_client = TrackingServiceClient(final_tracking_uri)
-                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/_tracking_service/client.py", line 98, in __init__
-    self.store
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/_tracking_service/client.py", line 102, in store
-    return utils._get_store(self.tracking_uri)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/_tracking_service/utils.py", line 267, in _get_store
-    return _tracking_store_registry.get_store(store_uri, artifact_uri)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/_tracking_service/registry.py", line 45, in get_store
-    return self._get_store_with_resolved_uri(resolved_store_uri, artifact_uri)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/_tracking_service/registry.py", line 55, in _get_store_with_resolved_uri
-    builder = self.get_store_builder(resolved_store_uri)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ana/globalbank/.venv/lib/python3.12/site-packages/mlflow/tracking/registry.py", line 83, in get_store_builder
-    raise UnsupportedModelRegistryStoreURIException(
-mlflow.tracking.registry.UnsupportedModelRegistryStoreURIException:  Model registry functionality is unavailable; got unsupported URI 'sqlite:////home/ana/globalbank/mlflow.db' for model registry data storage. Supported URI schemes are: ['', 'file', 'databricks', 'databricks-uc', 'uc', 'http', 'https']. See https://www.mlflow.org/docs/latest/tracking.html#storage for how to run an MLflow server against one of the supported backend storage locations.
+26 September: 6,346 authorizations, 60 fraud, 74.71 EUR
+threshold  queue  caught  precision  recall  fraud EUR caught
+      0.5     60      60       1.00    1.00             74.71
+      0.7     60      60       1.00    1.00             74.71
+      0.9     60      60       1.00    1.00             74.71
+     0.97     60      60       1.00    1.00             74.71
+     0.99     55      55       1.00    0.92             68.32

@@ -1,4 +1,5 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
+import { view } from '../fold'
 import { ideFrame, lineOf, linesFrom } from '../ide'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
@@ -47,7 +48,7 @@ const times1 = one1[2].split(' ').map((t) => { const [hm, a] = t.split('/'); con
 const t0 = times1[0].at
 const ring1Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/ring.py'], 'globalbank/ring.py', ['globalbank/ring.py']),
-  editor: { file: 'globalbank/ring.py', code: ring1, highlight: linesFrom(ring1, "WHERE to_date(auth_ts) = '{day}' AND hour(auth_ts) < 5", 'GROUP BY card_id HAVING count(*) > 3') },
+  editor: { file: 'globalbank/ring.py', code: ring1, ...view(ring1, 'spark = get_spark()'), highlight: linesFrom(ring1, "WHERE to_date(auth_ts) = '{day}' AND hour(auth_ts) < 5", 'GROUP BY card_id HAVING count(*) > 3') },
   session: s1,
   side: [
     {
@@ -91,7 +92,7 @@ const rules2Scene: SceneModel = ideFrame({
 const nights3 = grid(outputOf(s3, 'python -m globalbank.stream'))
 const stream3Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/stream.py', 'globalbank/ring.py'], 'globalbank/stream.py', ['globalbank/stream.py']),
-  editor: { file: 'globalbank/stream.py', code: stream3, highlight: linesFrom(stream3, ".withWatermark('auth_ts', '30 minutes')", ".where('auths > 5'))") },
+  editor: { file: 'globalbank/stream.py', code: stream3, ...view(stream3, 'spark = get_spark()'), highlight: linesFrom(stream3, ".withWatermark('auth_ts', '30 minutes')", ".where('auths > 5'))") },
   session: s3,
   side: [
     {
@@ -134,6 +135,7 @@ const features4Scene: SceneModel = ideFrame({
       type: 'table', id: 'days', title: `${rows4} rows, by day`, tone: 'store', columns: ['day', 'auths', 'fraud', 'avg auths_10m'],
       rows: days4.map((d) => ({ id: `d-${d[0]}`, cells: d, tone: Number(d[2]) > 0 ? 'consume' as const : undefined })),
     },
+    { type: 'note', id: 'note', tone: 'store', text: 'Only September has labels: its chargebacks. 22 October is there to be scored, not learned from — its chargebacks have not arrived.' },
   ],
 })
 
@@ -200,7 +202,7 @@ const head7 = out7.split('\n')[0]
 const flagged7 = all(out7, /^\s+(K\d+)\s+(\d+) auths\s+first (\d\d:\d\d)\s+score ([\d.]+)$/gm).map((m) => m.slice(1, 5))
 const score7Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/registry.py', 'globalbank/score.py', 'globalbank/train.py'], 'globalbank/score.py', ['globalbank/score.py']),
-  editor: { file: 'globalbank/score.py', code: score7, highlight: linesFrom(score7, "CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'", "batch['score'] = model.predict_proba(batch[X])[:, 1]") },
+  editor: { file: 'globalbank/score.py', code: score7, ...view(score7, 'day, threshold = '), highlight: linesFrom(score7, "CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'", "batch['score'] = model.predict_proba(batch[X])[:, 1]") },
   session: s7,
   side: [
     {
@@ -227,12 +229,12 @@ const head8 = out8.split('\n')[0]
 const rows8 = all(out8, /^\s*([\d.]+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)$/gm).map((m) => m.slice(1, 7))
 const tradeoff8Scene: SceneModel = ideFrame({
   tree: tree(['globalbank/score.py', 'globalbank/tradeoff.py'], 'globalbank/tradeoff.py', ['globalbank/tradeoff.py']),
-  editor: { file: 'globalbank/tradeoff.py', code: tradeoff8, highlight: linesFrom(tradeoff8, 'for t in (0.5, 0.7, 0.9, 0.97, 0.99):', "f'  {len(hit) / len(fraud):>6.2f}  {hit.amount.sum():>16}')") },
+  editor: { file: 'globalbank/tradeoff.py', code: tradeoff8, ...view(tradeoff8, 'spark = get_spark()'), highlight: linesFrom(tradeoff8, 'for t in (0.5, 0.7, 0.9, 0.97, 0.99):', "f'  {len(hit) / len(fraud):>6.2f}  {hit.amount.sum():>16}')") },
   session: s8,
   side: [
     {
-      type: 'plot', id: 'curve', compact: true, title: 'Precision and recall by threshold, 26 September',
-      x: { labels: rows8.map((r) => r[0]) }, y: { min: 0, max: 1, step: 0.25 },
+      type: 'plot', id: 'curve', compact: true, title: 'Precision and recall by threshold, 26 September (axis from 0.8)',
+      x: { labels: rows8.map((r) => r[0]) }, y: { min: 0.8, max: 1, step: 0.05 },
       series: [
         { kind: 'line', label: 'precision', points: rows8.map((r, i) => [i, Number(r[3])] as [number, number]), tone: 'store' },
         { kind: 'line', label: 'recall', points: rows8.map((r, i) => [i, Number(r[4])] as [number, number]), tone: 'consume' },
