@@ -78,10 +78,16 @@ def main() -> None:
                 w.tables.delete(table.full_name)
             except NotFound:  # a deleted pipeline's tables go with it
                 pass
+        # Models first: Unity Catalog lists a registered model among the functions too, and refuses
+        # to delete it as one while it has versions.
+        models = {m.full_name for m in w.registered_models.list(catalog_name=CATALOG, schema_name=schema.name)}
+        for model in models:  # Course 9's: its versions, then the model
+            for version in w.model_versions.list(model):
+                w.model_versions.delete(model, version.version)
+            w.registered_models.delete(model)
         for function in w.functions.list(catalog_name=CATALOG, schema_name=schema.name):
-            w.functions.delete(function.full_name)
-        for model in w.registered_models.list(catalog_name=CATALOG, schema_name=schema.name):
-            w.registered_models.delete(model.full_name)  # Course 9's, with its versions
+            if function.full_name not in models:
+                w.functions.delete(function.full_name)
         for volume in w.volumes.list(catalog_name=CATALOG, schema_name=schema.name):
             empty(w, f'/Volumes/{CATALOG}/{schema.name}/{volume.name}')
 
