@@ -28,8 +28,13 @@ and pinned. Sister repos:
 2026-10-26: infra ported, `globalbank_sim` built and verified, Course 1 authored. 2026-10-27: the
 owner's Free Edition workspace connected (`DATABRICKS_HOST` / `DATABRICKS_TOKEN` as environment
 secrets); Course 2 authored on it. 2026-10-28: Courses 8–12 authored on the second workspace; all 12 courses, 86 sections, are
-authored, replayed, rendered and looked at. Narration audio is not made. The owner reviews at the end (2026-10-26: "do course by course
-till end").
+authored, replayed, rendered and looked at. 2026-10-28: all 86 narration wavs landed from Colab, and
+all 12 courses are recorded at 4K (`scripts/out/<course>.mp4`, 1h 58m total) — 3840x2160 h264,
+30fps CFR, AAC 44.1k mono, every section on its real wav — and cut into the single film
+(`npm run film` → `scripts/out/film.mp4`, 86 chapters, stream-copy concat, audio normalised
+-18.4 → -14 LUFS for YouTube). Descriptions and the cover are built (`npm run gen:desc`,
+`npm run thumb:film`). Nothing is uploaded. The owner reviews at the end (2026-10-26: "do course
+by course till end").
 
 **The owner's workspace holds other catalogs** (personal and training ones). Never list catalogs,
 groups or users unfiltered on screen: filter to `globalbank*`, or print our own objects only.
@@ -38,18 +43,18 @@ path cut to 40 columns once kept the account id's first 11 characters).
 
 | # | Course | Sections | Status |
 | --- | --- | --- | --- |
-| 1 | `intro` | 4 | authored, replayed (lab), rendered, looked at; no audio |
-| 2 | `start` | 6 | pilot: authored, replayed on the workspace, rendered, looked at; no audio |
-| 3 | `land` | 8 | authored, replayed on the workspace, rendered, looked at; no audio |
-| 4 | `ledger` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio |
-| 5 | `customers` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio (5.8 documented) |
-| 6 | `protect` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio |
-| 7 | `pipeline` | 9 | authored, replayed on the second workspace, rendered, looked at; no audio |
-| 8 | `serve` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio |
-| 9 | `detect` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio (scoring on the laptop) |
-| 10 | `schedule` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (10.4 a concept scene with the real output) |
-| 11 | `ship` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (prod validated, not deployed; 11.6 unit tests run local; 11.7 deploy documented) |
-| 12 | `operate` | 6 | authored, replayed on the second workspace, rendered, looked at; no audio (12.5 the app map with real output; 12.6 documented) |
+| 1 | `intro` | 4 | authored, replayed (lab), rendered, looked at; narrated, recorded 4K |
+| 2 | `start` | 6 | pilot: authored, replayed on the workspace, rendered, looked at; narrated, recorded 4K |
+| 3 | `land` | 8 | authored, replayed on the workspace, rendered, looked at; narrated, recorded 4K |
+| 4 | `ledger` | 8 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K |
+| 5 | `customers` | 8 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K (5.8 documented) |
+| 6 | `protect` | 8 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K |
+| 7 | `pipeline` | 9 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K |
+| 8 | `serve` | 7 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K |
+| 9 | `detect` | 8 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K (scoring on the laptop) |
+| 10 | `schedule` | 7 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K (10.4 a concept scene with the real output) |
+| 11 | `ship` | 7 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K (prod validated, not deployed; 11.6 unit tests run local; 11.7 deploy documented) |
+| 12 | `operate` | 6 | authored, replayed on the second workspace, rendered, looked at; narrated, recorded 4K (12.5 the app map with real output; 12.6 documented) |
 
 ## Workspace quotas (learned 2026-10-27)
 
@@ -175,6 +180,11 @@ python3.12 scripts/spine.py <course>                 # workspace steps need DATA
 python3.12 -m globalbank_sim verify
 npm run shots -- <course>                            # then LOOK at out/shots/
 ```
+
+Publishing (after a course is recorded): `npm run gen:desc` writes `scripts/out/<course>.txt` from
+`scripts/titles.json`; `npm run film` concatenates every segment into `scripts/out/film.mp4`;
+`npm run thumb:film -- --all` renders the covers. `scripts/out/` is gitignored (the film is 548 MB),
+so the text deliverables are mirrored into `output/` to be versioned.
 
 Checks are a floor, not proof.
 

@@ -1,0 +1,32 @@
+Auto Loader: ingest files into Delta with schema evolution and rescued data · Databricks
+━━━━━━━━━━━━━━━━
+Part of GraphL's Databricks series — every section pairs one diagram with the idea it explains, so the picture and the words land together.
+━━━━━━━━━━━━━━━━
+⏱ CHAPTERS
+0:00 Files keep arriving
+1:21 Auto Loader: every file once
+2:43 The checkpoint
+4:05 Schema hints: money and time
+5:22 Schema evolution: a new field
+6:50 Rescued data
+8:11 Where each row came from
+9:31 Bronze, reconciled
+━━━━━━━━━━━━━━━━
+▶ DATABRICKS — THE SERIES
+① What Databricks is, and why the lakehouse replaced two systems → https://graphl.in/databricks-retail-bank-lakehouse/#/intro
+② Databricks for beginners: workspace, CLI, Connect and your first table → https://graphl.in/databricks-retail-bank-lakehouse/#/start
+③ Auto Loader: ingest files into Delta with schema evolution and rescued data  ◀ this video → https://graphl.in/databricks-retail-bank-lakehouse/#/land
+④ Delta Lake: time travel, restore, constraints and the change feed → https://graphl.in/databricks-retail-bank-lakehouse/#/ledger
+⑤ CDC in Databricks: change records, out-of-order rows and SCD history → https://graphl.in/databricks-retail-bank-lakehouse/#/customers
+⑥ Unity Catalog: grants, column masks, row filters, lineage and audit → https://graphl.in/databricks-retail-bank-lakehouse/#/protect
+⑦ Lakeflow Declarative Pipelines: streaming tables, materialized views, expectations → https://graphl.in/databricks-retail-bank-lakehouse/#/pipeline
+⑧ Databricks SQL: warehouses, gold tables, dashboards and slow queries → https://graphl.in/databricks-retail-bank-lakehouse/#/serve
+⑨ Fraud detection on Databricks: rules, features, MLflow and scoring → https://graphl.in/databricks-retail-bank-lakehouse/#/detect
+⑩ Lakeflow Jobs: nightly runs, file arrival triggers, repair and idempotency → https://graphl.in/databricks-retail-bank-lakehouse/#/schedule
+⑪ Databricks Asset Bundles: targets, deploys, unit tests and CI → https://graphl.in/databricks-retail-bank-lakehouse/#/ship
+⑫ Databricks cost and performance: DBUs, OPTIMIZE, liquid clustering → https://graphl.in/databricks-retail-bank-lakehouse/#/operate
+━━━━━━━━━━━━━━━━
+🔗 Watch interactively on GraphL → https://graphl.in/databricks-retail-bank-lakehouse/#/land
+🌐 More concepts → https://graphl.in
+━━━━━━━━━━━━━━━━
+#Databricks #Lakehouse #DataEngineering #TechEducation

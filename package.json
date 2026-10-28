@@ -13,7 +13,7 @@
     "capture": "vite preview --outDir dist-snapshot --port 5181",
     "capture:shots": "graphl-capture-shots",
     "record": "graphl-record",
-    "record:all": "graphl-record-all",
+    "record:all": "caffeinate -ims graphl-record-all",
     "record:reels": "graphl-record-reels",
     "shots:4k": "graphl-shots-4k",
     "gen:audio": "graphl-gen-audio",
@@ -21,7 +21,9 @@
     "thumb": "graphl-thumb",
     "check:spine": "python3.12 scripts/spine.py",
     "shots": "node scripts/shots.mjs",
-    "gen": "python3.12 -m globalbank_sim"
+    "gen": "python3.12 -m globalbank_sim",
+    "film": "node scripts/film.mjs",
+    "thumb:film": "node scripts/thumb-film.mjs"
   },
   "dependencies": {
     "@graphlearning/graphl-flow": "^0.3.0",

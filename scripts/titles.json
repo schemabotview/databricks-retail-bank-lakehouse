@@ -1,3 +1,15 @@
 {
-  "_comment": "Curated publish titles (YouTube title + thumbnail header) per course, keyed by course id. Search-first: what someone would actually type, never 'Course 4'. One entry per course in src/content/index.ts; each course adds its own when it is authored."
+  "_comment": "Curated publish titles (YouTube title + thumbnail header) per course, keyed by course id. Search-first: what someone would actually type, never 'Course 4'. One entry per course in src/content/index.ts; each course adds its own when it is authored.",
+  "intro": "What Databricks is, and why the lakehouse replaced two systems",
+  "start": "Databricks for beginners: workspace, CLI, Connect and your first table",
+  "land": "Auto Loader: ingest files into Delta with schema evolution and rescued data",
+  "ledger": "Delta Lake: time travel, restore, constraints and the change feed",
+  "customers": "CDC in Databricks: change records, out-of-order rows and SCD history",
+  "protect": "Unity Catalog: grants, column masks, row filters, lineage and audit",
+  "pipeline": "Lakeflow Declarative Pipelines: streaming tables, materialized views, expectations",
+  "serve": "Databricks SQL: warehouses, gold tables, dashboards and slow queries",
+  "detect": "Fraud detection on Databricks: rules, features, MLflow and scoring",
+  "schedule": "Lakeflow Jobs: nightly runs, file arrival triggers, repair and idempotency",
+  "ship": "Databricks Asset Bundles: targets, deploys, unit tests and CI",
+  "operate": "Databricks cost and performance: DBUs, OPTIMIZE, liquid clustering"
 }

@@ -1,0 +1,94 @@
+Learn Databricks by building a retail bank lakehouse: full course
+
+86 sections, 12 courses, 1:58:44. The lakehouse is built on a real
+Databricks Free Edition workspace — serverless, Spark 4.2.0 — so every row count, every
+file listing and every error you see is that workspace answering. The few features Free
+Edition does not offer are labelled on screen as documented, never shown as if run.
+
+⏱ CHAPTERS
+0:00:00 ▸ Why Databricks, and Global Bank — Why Databricks exists
+0:01:34 Global Bank's data
+0:03:08 The medallion architecture
+0:04:53 What we'll build
+0:06:22 ▸ A workspace and a first table — A workspace and the CLI
+0:07:57 Where your code runs
+0:09:40 Databricks Connect: Spark on serverless
+0:11:13 Catalogs, schemas, volumes
+0:12:44 Land the first files
+0:14:12 The first table
+0:15:48 ▸ Land the card stream — Files keep arriving
+0:17:09 Auto Loader: every file once
+0:18:32 The checkpoint
+0:19:54 Schema hints: money and time
+0:21:11 Schema evolution: a new field
+0:22:39 Rescued data
+0:24:00 Where each row came from
+0:25:20 Bronze, reconciled
+0:26:43 ▸ Make the ledger trustworthy — A bad batch lands
+0:28:04 Time travel
+0:29:22 RESTORE
+0:30:29 Constraints
+0:31:54 Two writers, one table
+0:33:15 Settling authorizations
+0:34:42 Deletion vectors
+0:36:04 Change data feed
+0:37:30 ▸ Customers and accounts from the core system — What the core system sends
+0:38:54 Current state with MERGE
+0:40:07 Out of order
+0:41:25 Apply changes in sequence
+0:42:35 Deletes
+0:43:47 History: SCD type 2
+0:45:04 A point-in-time join
+0:46:14 Managed connectors
+0:47:39 ▸ Protect customers’ data — Unity Catalog
+0:49:10 Grants by layer
+0:50:27 Column masks
+0:51:53 Row filters
+0:53:07 Tags and classification
+0:54:22 Lineage
+0:55:30 Audit
+0:56:45 Erasure vs retention
+0:58:16 ▸ Declare the pipeline — Why declare
+0:59:34 Streaming tables
+1:00:57 Materialized views
+1:02:28 The graph
+1:03:34 Expectations
+1:05:02 Quarantine
+1:06:27 AUTO CDC
+1:07:57 The event log
+1:09:09 Full refresh
+1:10:29 ▸ Serve the business — A SQL warehouse
+1:11:55 Daily balances
+1:13:18 The monthly statement
+1:14:45 The regulator's question
+1:16:05 A dashboard
+1:17:35 Alerts
+1:18:59 Why a query is slow
+1:20:31 ▸ Catch card fraud — What card testing looks like
+1:21:57 Rules first
+1:23:18 A streaming rule
+1:24:48 Features in Unity Catalog
+1:26:08 MLflow tracking
+1:27:42 A model in Unity Catalog
+1:28:59 Scoring a new day
+1:30:26 Precision, recall, money
+1:31:57 ▸ Run it every night — The nightly run
+1:33:23 A job run
+1:34:33 File arrival
+1:35:43 Failure and repair
+1:37:05 Idempotency
+1:38:18 Parameters and task values
+1:39:40 Who the job runs as
+1:40:53 ▸ Ship it as code — The workspace is not git
+1:42:17 A bundle
+1:43:40 Resources
+1:44:59 Targets
+1:46:09 Validate, deploy, run
+1:47:39 Tests
+1:49:03 CI
+1:50:21 ▸ Operate it, and pay for it — What it costs
+1:51:45 Small files
+1:53:09 Liquid clustering
+1:54:41 Predictive optimization
+1:56:01 The finished bank
+1:57:26 Where next
