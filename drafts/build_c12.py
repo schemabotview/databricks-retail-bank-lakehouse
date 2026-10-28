@@ -78,7 +78,7 @@ for _ in range(40):  # the query history arrives some minutes later
         SELECT regexp_extract(statement_text, 'auths_([a-z_]+)', 1) AS t,
                read_files, pruned_files
         FROM system.query.history
-        WHERE statement_text LIKE '%M0001%auths_%'
+        WHERE statement_text LIKE '%auths_%M0001%'
           AND statement_text NOT LIKE '%system.query%'
           AND start_time > current_timestamp() - INTERVAL 30 MINUTES
         ORDER BY start_time DESC LIMIT 2""")
