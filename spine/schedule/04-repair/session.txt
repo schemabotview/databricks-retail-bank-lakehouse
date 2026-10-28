@@ -1,22 +1,18 @@
 $ python -m globalbank.job run
-run FAILED (one_time): 7 tasks
-  pipeline   SUCCESS         
-  accounts   SUCCESS         
-  balances   SUCCESS         
-  flags      SUCCESS         
-  statements SUCCESS         
-  check      FAILED          Workload failed, see run output for details
-  check      FAILED          Workload failed, see run output for details
+run FAILED (one_time): 6 tasks
+  pipeline   SUCCESS             
+  accounts   SUCCESS             
+  balances   SUCCESS             
+  flags      SUCCESS             
+  statements SUCCESS             
+  check      FAILED   2 attempts SystemExit: no clearing file for 2026-10-31: t
 $ bash land.sh 2026-10-31 settlements | wc -l
 1
 $ python -m globalbank.job repair
-run FAILED (one_time): 9 tasks
-  pipeline   SUCCESS         
-  accounts   SUCCESS         
-  balances   SUCCESS         
-  flags      SUCCESS         
-  statements SUCCESS         
-  check      FAILED          Workload failed, see run output for details
-  check      FAILED          Workload failed, see run output for details
-  check      FAILED          Workload failed, see run output for details
-  check      FAILED          Workload failed, see run output for details
+run SUCCESS (one_time): 6 tasks
+  pipeline   SUCCESS  2 attempts 
+  accounts   SUCCESS  2 attempts 
+  balances   SUCCESS  2 attempts 
+  flags      SUCCESS  2 attempts 
+  statements SUCCESS  2 attempts 
+  check      SUCCESS  3 attempts 

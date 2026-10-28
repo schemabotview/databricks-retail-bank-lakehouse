@@ -46,7 +46,7 @@ path cut to 40 columns once kept the account id's first 11 characters).
 | 7 | `pipeline` | 9 | authored, replayed on the second workspace, rendered, looked at; no audio |
 | 8 | `serve` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio |
 | 9 | `detect` | 8 | authored, replayed on the second workspace, rendered, looked at; no audio (scoring on the laptop) |
-| 10 | `schedule` | 7 | not started |
+| 10 | `schedule` | 7 | authored, replayed on the second workspace, rendered, looked at; no audio (10.4 a concept scene with the real output) |
 | 11 | `ship` | 7 | not started |
 | 12 | `operate` | 6 | not started |
 

@@ -34,46 +34,72 @@ const J = 'python -m globalbank.job'
 type Task = { key: string; state: string; note: string }
 const report = (out: string) => ({
   head: out.match(/^run (\w+) \((\w+)\): (\d+) tasks$/m)!,
-  tasks: all(out, /^ {2}(\w+)\s+(\w+|-)(?:\s+(.*))?$/gm).map((m) => ({ key: m[1], state: m[2], note: m[3] ?? '' } as Task)),
+  tasks: all(out, /^ {2}(\w+)[ \t]+(\w+|-)(?:[ \t]+(.*))?$/gm).map((m) => ({ key: m[1], state: m[2], note: m[3] ?? '' } as Task)),
 })
 const graph = (out: string) => all(out, /^ {2}(\w+)\s+(first|after (.+))$/gm).map((m) => ({ key: m[1], after: m[3] ? m[3].split(', ') : [] }))
 const tone = (state: string) => (state === 'SUCCESS' ? 'ingest' : state === 'FAILED' ? 'consume' : undefined) as 'ingest' | 'consume' | undefined
-const taskNodes = (tasks: { key: string; after: string[] }[], states: Record<string, string> = {}) => ({
-  nodes: tasks.map((t) => ({ type: 'item' as const, id: `t-${t.key}`, title: t.key, sub: states[t.key] ?? (t.after.length ? `after ${t.after.join(', ')}` : 'first'), icon: t.key === 'pipeline' ? 'workflow' : t.key === 'check' ? 'check' : 'database', tone: tone(states[t.key] ?? '') })),
-  edges: tasks.flatMap((t) => t.after.map((a) => ({ from: `t-${a}`, to: `t-${t.key}` }))),
-})
+type Node = { key: string; after: string[] }
+// The graph as levels: a task runs one level after the latest task it waits for. Tasks on one level
+// run at once, so the levels draw as a chain with no crossing edges; a table gives each dependency.
+const levels = (tasks: Node[]) => {
+  const at: Record<string, number> = {}
+  const level = (t: Node): number => (at[t.key] ??= t.after.length ? 1 + Math.max(...t.after.map((a) => level(tasks.find((x) => x.key === a)!))) : 0)
+  tasks.forEach(level)
+  return [...new Set(Object.values(at))].sort().map((n) => tasks.filter((t) => at[t.key] === n).map((t) => t.key))
+}
+const chain = (tasks: Node[], states: Record<string, string> = {}) => {
+  const lv = levels(tasks)
+  return {
+    nodes: lv.map((keys, i) => ({
+      type: 'item' as const, id: `l-${i}`, title: keys.join(' · '),
+      sub: keys.length > 1 ? `${keys.length} tasks at once` : i === 0 ? 'first' : 'after the level above',
+      icon: keys.includes('pipeline') ? 'workflow' : keys.includes('check') ? 'check' : 'database',
+      tone: keys.some((k) => states[k] === 'FAILED') ? 'consume' as const : keys.every((k) => states[k] === 'SUCCESS') ? 'ingest' as const : undefined,
+    })),
+    edges: lv.slice(1).map((_, i) => ({ from: `l-${i}`, to: `l-${i + 1}` })),
+  }
+}
 
 // §1 — the nightly run, as a job: the task graph.
 const g1 = graph(outputOf(s1, `${J} deploy`))
-const tn1 = taskNodes(g1)
+const c1 = chain(g1)
 const nightly1Scene: SceneModel = ideFrame({
   tree: tree(['resources/nightly.yml', 'jobs/check.py', 'sql/fraud/flags.sql', 'globalbank/job.py'], 'resources/nightly.yml', ['resources/nightly.yml', 'jobs/check.py', 'sql/fraud/flags.sql', 'globalbank/job.py']),
   editor: { file: 'resources/nightly.yml', code: nightly1, lang: 'text', ...view(nightly1, '      tasks:', undefined, 0), highlight: linesFrom(nightly1, '- task_key: pipeline', 'pipeline_id: ${resources.pipelines.globalbank_pipeline.id}') },
   session: s1,
   side: [
-    { type: 'group', id: 'graph', title: 'globalbank_nightly: the task graph', icon: 'workflow', tone: 'ingest', ...FILL, children: tn1.nodes },
+    { type: 'group', id: 'graph', title: 'globalbank_nightly, level by level', icon: 'workflow', tone: 'ingest', ...FILL, children: c1.nodes },
+    {
+      type: 'table', id: 'deps', title: 'Each task, and what it waits for', tone: 'ingest', columns: ['task', 'waits for'],
+      rows: g1.map((t) => ({ id: `d-${t.key}`, cells: [t.key, t.after.join(', ') || '—'] })),
+    },
   ],
-  edges: tn1.edges,
+  edges: c1.edges,
 })
 
 // §2 — a job run: each task's state, from the run.
 const r2 = report(outputOf(s2, `${J} run`))
-const tn2 = taskNodes(g1, Object.fromEntries(r2.tasks.map((t) => [t.key, t.state])))
+const states2 = Object.fromEntries(r2.tasks.map((t) => [t.key, t.state]))
+const c2 = chain(g1, states2)
 const run2: SceneModel = ideFrame({
   tree: tree(['resources/nightly.yml', 'globalbank/job.py'], 'globalbank/job.py'),
   editor: { file: 'globalbank/job.py', code: job2, ...view(job2, "    elif verb == 'run':", undefined, 0), highlight: linesFrom(job2, 'run = w.jobs.run_now(', 'report(w, run)') },
   session: s2,
   side: [
-    { type: 'group', id: 'graph', title: `run ${r2.head[1]}: ${r2.head[3]} tasks`, icon: 'workflow', tone: 'ingest', ...FILL, children: tn2.nodes },
+    { type: 'group', id: 'graph', title: `run ${r2.head[1]} (${r2.head[2].replace('_', ' ')}): ${r2.head[3]} tasks`, icon: 'workflow', tone: 'ingest', ...FILL, children: c2.nodes },
+    {
+      type: 'table', id: 'states', title: 'Each task’s result, from the run', tone: 'ingest', columns: ['task', 'waits for', 'result'],
+      rows: g1.map((t) => ({ id: `s-${t.key}`, cells: [t.key, t.after.join(', ') || '—', states2[t.key] ?? '-'], tone: tone(states2[t.key] ?? '') })),
+    },
   ],
-  edges: tn2.edges,
+  edges: c2.edges,
 })
 
 // §3 — file arrival: a clearing file lands, the job starts.
 const r3 = report(outputOf(s3, `${J} wait`))
 const fileArrival3: SceneModel = ideFrame({
   tree: tree(['resources/nightly.yml', 'globalbank/job.py', 'land.sh'], 'resources/nightly.yml'),
-  editor: { file: 'resources/nightly.yml', code: nightly3, lang: 'text', highlight: linesFrom(nightly3, 'trigger:', 'file_arrival:') },
+  editor: { file: 'resources/nightly.yml', code: nightly3, lang: 'text', ...view(nightly3, 'trigger:', undefined, 0), highlight: linesFrom(nightly3, 'trigger:', 'file_arrival:') },
   session: s3,
   side: [
     {
@@ -98,31 +124,35 @@ const fileArrival3: SceneModel = ideFrame({
 const blocks4 = s4.split(/^\$ /m).slice(1)
 const failed4 = report(blocks4.find((b) => b.startsWith(`${J} run`))!)
 const repaired4 = report(blocks4.find((b) => b.startsWith(`${J} repair`))!)
-const repair4: SceneModel = ideFrame({
-  tree: tree(['jobs/check.py', 'resources/nightly.yml', 'globalbank/job.py'], 'jobs/check.py'),
-  editor: { file: 'jobs/check.py', code: check4, highlight: linesFrom(check4, 'if not cleared:', "raise SystemExit(f'no clearing file for {day}") },
-  session: s4,
-  side: [
+// The session runs past the terminal's 13 rows (two run reports and a landing), so this section is
+// a full concept scene with the real output inside it (CLAUDE.md, "Frames").
+const block4 = (verb: string) => '$ ' + blocks4.find((b) => b.startsWith(`${J} ${verb}`))!.trimEnd()
+const land4 = '$ ' + blocks4.find((b) => b.startsWith('bash land.sh'))!.trimEnd()
+const repair4: SceneModel = {
+  title: 'Failure and repair',
+  sub: 'run on the workspace: one run of globalbank_nightly, failed, then repaired',
+  nodes: [
     {
-      type: 'table', id: 'states', title: 'One run, before and after repair', tone: 'consume', columns: ['task', 'first try', 'after repair'],
-      rows: failed4.tasks.map((t) => {
-        const after = repaired4.tasks.find((r) => r.key === t.key)?.state ?? t.state
-        return { id: `r-${t.key}`, cells: [t.key, t.state, after], tone: t.state !== after ? 'ingest' as const : tone(t.state) }
-      }),
+      type: 'group', id: 'night', title: 'The night of 31 October', icon: 'workflow', tone: 'consume', dir: 'row', children: [
+        { type: 'code', id: 'check', filename: 'jobs/check.py', code: check4.split('\n').slice(lineOf(check4, 'day = sys.argv[1]') - 1, lineOf(check4, "raise SystemExit(f'no clearing file for {day}")).join('\n') },
+        { type: 'code', id: 'first', terminal: true, filename: 'terminal — the run fails', code: block4('run') },
+      ],
     },
     {
-      type: 'group', id: 'how', title: 'Repair, not re-run', icon: 'settings', tone: 'ingest', ...FILL, children: [
-        { type: 'item', id: 'h-fail', title: 'check fails: no clearing file for 31 Oct', sub: 'what depends on it is skipped', icon: 'bell' },
-        { type: 'item', id: 'h-fix', title: 'the file lands', sub: 'land.sh 2026-10-31 settlements', icon: 'file' },
-        { type: 'item', id: 'h-repair', title: 'repair the same run', sub: 'from the pipeline down: the file enters there', icon: 'check' },
+      type: 'group', id: 'fix', title: 'The file lands; the same run is repaired', icon: 'check', tone: 'ingest', dir: 'row', children: [
+        { type: 'code', id: 'repair', terminal: true, filename: 'terminal — the run is repaired', code: `${land4}\n${block4('repair')}` },
+        {
+          type: 'table', id: 'states', title: 'One run, before and after repair', tone: 'ingest', columns: ['task', 'first try', 'after repair'],
+          rows: failed4.tasks.map((t) => {
+            const after = repaired4.tasks.find((r) => r.key === t.key)?.state ?? t.state
+            return { id: `r-${t.key}`, cells: [t.key, t.state, after], tone: t.state !== after ? 'ingest' as const : tone(t.state) }
+          }),
+        },
       ],
     },
   ],
-  edges: [
-    { from: 'h-fail', to: 'h-fix' },
-    { from: 'h-fix', to: 'h-repair' },
-  ],
-})
+  edges: [{ from: 'night', to: 'fix', label: 'repair: from the pipeline down' }],
+}
 
 // §5 — idempotency: the month-end task appends on every run.
 const rows5 = outputOf(s5, 'python -m globalbank.warehouse sql/gold/month_end_rows.sql').split('\n').slice(1).filter(Boolean)
@@ -193,6 +223,7 @@ const runAs7: SceneModel = ideFrame({
         { id: 'b-sp', cells: ['a bank', 'a service principal', 'a job outlives its author’s account'] },
       ],
     },
+    { type: 'note', id: 'note', tone: 'infra', text: 'Documented (docs.databricks.com, checked 2026-10-28): a service principal is made in the account console, which Free Edition does not have, so this job runs as its one user.' },
   ],
 })
 
