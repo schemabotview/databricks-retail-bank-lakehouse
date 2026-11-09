@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import nightly1 from '../../../spine/schedule/01-nightly/project/resources/nightly.yml?raw'
@@ -23,7 +24,8 @@ import s7 from '../../../spine/schedule/07-run-as/session.txt?raw'
 // (spine/schedule/). Task states come from the Jobs API's own run records.
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
-const FILL = { spread: true, minH: 520 } as const
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
     files: ['.venv/', 'landing/', ...files.filter((f) => !f.startsWith('globalbank/')), ...files.filter((f) => f.startsWith('globalbank/')), 'pipelines/'],
@@ -63,7 +65,8 @@ const chain = (tasks: Node[], states: Record<string, string> = {}) => {
 // §1 — the nightly run, as a job: the task graph.
 const g1 = graph(outputOf(s1, `${J} deploy`))
 const c1 = chain(g1)
-const nightly1Scene: SceneModel = ideFrame({
+const nightly1Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['resources/nightly.yml', 'jobs/check.py', 'sql/fraud/flags.sql', 'globalbank/job.py'], 'resources/nightly.yml', ['resources/nightly.yml', 'jobs/check.py', 'sql/fraud/flags.sql', 'globalbank/job.py']),
   editor: { file: 'resources/nightly.yml', code: nightly1, lang: 'text', ...view(nightly1, '      tasks:', undefined, 0), highlight: linesFrom(nightly1, '- task_key: pipeline', 'pipeline_id: ${resources.pipelines.globalbank_pipeline.id}') },
   session: s1,
@@ -81,7 +84,8 @@ const nightly1Scene: SceneModel = ideFrame({
 const r2 = report(outputOf(s2, `${J} run`))
 const states2 = Object.fromEntries(r2.tasks.map((t) => [t.key, t.state]))
 const c2 = chain(g1, states2)
-const run2: SceneModel = ideFrame({
+const run2: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['resources/nightly.yml', 'globalbank/job.py'], 'globalbank/job.py'),
   editor: { file: 'globalbank/job.py', code: job2, ...view(job2, "    elif verb == 'run':", undefined, 0), highlight: linesFrom(job2, 'run = w.jobs.run_now(', 'report(w, run)') },
   session: s2,
@@ -97,7 +101,8 @@ const run2: SceneModel = ideFrame({
 
 // §3 — file arrival: a clearing file lands, the job starts.
 const r3 = report(outputOf(s3, `${J} wait`))
-const fileArrival3: SceneModel = ideFrame({
+const fileArrival3: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['resources/nightly.yml', 'globalbank/job.py', 'land.sh'], 'resources/nightly.yml'),
   editor: { file: 'resources/nightly.yml', code: nightly3, lang: 'text', ...view(nightly3, 'trigger:', undefined, 0), highlight: linesFrom(nightly3, 'trigger:', 'file_arrival:') },
   session: s3,
@@ -156,7 +161,8 @@ const repair4: SceneModel = {
 
 // §5 — idempotency: the month-end task appends on every run.
 const rows5 = outputOf(s5, 'python -m globalbank.warehouse sql/gold/month_end_rows.sql').split('\n').slice(1).filter(Boolean)
-const idem5: SceneModel = ideFrame({
+const idem5: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['sql/gold/month_end.sql', 'sql/gold/month_end_rows.sql', 'resources/nightly.yml'], 'sql/gold/month_end.sql', ['sql/gold/month_end.sql', 'sql/gold/month_end_rows.sql']),
   editor: { file: 'sql/gold/month_end.sql', code: monthEnd5, lang: 'sql', highlight: linesFrom(monthEnd5, 'INSERT INTO globalbank_dev.gold.month_end', 'FROM globalbank_dev.gold.monthly_statements GROUP BY month') },
   session: s5,
@@ -182,7 +188,8 @@ const idem5: SceneModel = ideFrame({
 // §6 — parameters and task values: the month flows from check to month_end; idempotent now.
 const out6 = outputOf(s6, `${J} output check`)
 const rows6 = outputOf(s6, 'python -m globalbank.warehouse sql/gold/month_end_rows.sql').split('\n').slice(1).filter(Boolean)
-const params6: SceneModel = ideFrame({
+const params6: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['sql/gold/month_end.sql', 'resources/nightly.yml', 'jobs/check.py'], 'sql/gold/month_end.sql'),
   editor: { file: 'sql/gold/month_end.sql', code: monthEnd6, lang: 'sql', highlight: [lineOf(monthEnd6, 'REPLACE WHERE month = :month'), lineOf(monthEnd6, 'WHERE month = :month')] },
   session: s6,
@@ -208,7 +215,8 @@ void nightly6
 
 // §7 — who the job runs as, and who hears of a failure.
 const who7 = outputOf(s7, `${J} who`).split('\n')
-const runAs7: SceneModel = ideFrame({
+const runAs7: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['resources/nightly.yml', 'globalbank/job.py'], 'resources/nightly.yml'),
   editor: { file: 'resources/nightly.yml', code: nightly7, lang: 'text', ...view(nightly7, 'resources:', '      tasks:', 0), highlight: linesFrom(nightly7, 'run_as:', 'on_failure:') },
   session: s7,
@@ -223,7 +231,6 @@ const runAs7: SceneModel = ideFrame({
         { id: 'b-sp', cells: ['a bank', 'a service principal', 'a job outlives its author’s account'] },
       ],
     },
-    { type: 'note', id: 'note', tone: 'infra', text: 'Documented (docs.databricks.com, checked 2026-10-28): a service principal is made in the account console, which Free Edition does not have, so this job runs as its one user.' },
   ],
 })
 

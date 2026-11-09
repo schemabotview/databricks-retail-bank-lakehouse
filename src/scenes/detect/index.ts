@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import ring1 from '../../../spine/detect/01-card-testing/project/globalbank/ring.py?raw'
@@ -26,7 +27,8 @@ import s8 from '../../../spine/detect/08-tradeoff/session.txt?raw'
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
 const num = (s: string) => Number(s.replace(/,/g, ''))
-const FILL = { spread: true, minH: 520 } as const
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
     files: ['.venv/', 'landing/', ...files.filter((f) => !f.startsWith('globalbank/')), 'globalbank/session.py', ...files.filter((f) => f.startsWith('globalbank/')), 'pipelines/'],
@@ -46,7 +48,8 @@ const cards1 = all(out1, /^\s+(K\d+)\s+(\d+) auths in\s+(\d+) min\s+([\d.]+) EUR
 const one1 = out1.match(/^(K\d+): (.*)$/m)!
 const times1 = one1[2].split(' ').map((t) => { const [hm, a] = t.split('/'); const [h, m] = hm.split(':').map(Number); return { at: h * 60 + m, amount: Number(a) } })
 const t0 = times1[0].at
-const ring1Scene: SceneModel = ideFrame({
+const ring1Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/ring.py'], 'globalbank/ring.py', ['globalbank/ring.py']),
   editor: { file: 'globalbank/ring.py', code: ring1, ...view(ring1, 'spark = get_spark()'), highlight: linesFrom(ring1, "WHERE to_date(auth_ts) = '{day}' AND hour(auth_ts) < 5", 'GROUP BY card_id HAVING count(*) > 3') },
   session: s1,
@@ -65,7 +68,8 @@ const ring1Scene: SceneModel = ideFrame({
 
 // §2 — rules first: more than 5 authorizations in 10 minutes, checked against the chargebacks.
 const out2 = grid(outputOf(s2, 'python -m globalbank.warehouse sql/fraud/velocity.sql'))
-const rules2Scene: SceneModel = ideFrame({
+const rules2Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['sql/fraud/velocity.sql', 'globalbank/ring.py', 'globalbank/warehouse.py'], 'sql/fraud/velocity.sql', ['sql/fraud/velocity.sql']),
   editor: { file: 'sql/fraud/velocity.sql', code: rules2, lang: 'sql', highlight: linesFrom(rules2, 'count(*) OVER (PARTITION BY card_id ORDER BY auth_ts', 'AND CURRENT ROW) AS auths_10m') },
   session: s2,
@@ -90,7 +94,8 @@ const rules2Scene: SceneModel = ideFrame({
 
 // §3 — a streaming rule: windows and a watermark over bronze.
 const nights3 = grid(outputOf(s3, 'python -m globalbank.stream'))
-const stream3Scene: SceneModel = ideFrame({
+const stream3Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/stream.py', 'globalbank/ring.py'], 'globalbank/stream.py', ['globalbank/stream.py']),
   editor: { file: 'globalbank/stream.py', code: stream3, ...view(stream3, 'spark = get_spark()'), highlight: linesFrom(stream3, ".withWatermark('auth_ts', '30 minutes')", ".where('auths > 5'))") },
   session: s3,
@@ -117,7 +122,8 @@ const stream3Scene: SceneModel = ideFrame({
 const out4 = outputOf(s4, 'python -m globalbank.features')
 const rows4 = out4.match(/: ([\d,]+) rows/)![1]
 const days4 = all(out4, /^\|(\S+)\|\s*(\d+)\|\s*(\d+)\|\s*([\d.]+)\|$/gm).map((m) => m.slice(1, 5))
-const features4Scene: SceneModel = ideFrame({
+const features4Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/features.py', 'globalbank/stream.py'], 'globalbank/features.py', ['globalbank/features.py']),
   editor: { file: 'globalbank/features.py', code: features4, highlight: linesFrom(features4, 'count(*) OVER (PARTITION BY card_id ORDER BY auth_ts', 'AS INT) AS fraud') },
   session: s4,
@@ -135,7 +141,6 @@ const features4Scene: SceneModel = ideFrame({
       type: 'table', id: 'days', title: `${rows4} rows, by day`, tone: 'store', columns: ['day', 'auths', 'fraud', 'avg auths_10m'],
       rows: days4.map((d) => ({ id: `d-${d[0]}`, cells: d, tone: Number(d[2]) > 0 ? 'consume' as const : undefined })),
     },
-    { type: 'note', id: 'note', tone: 'store', text: 'Only September has labels: its chargebacks. 22 October is there to be scored, not learned from — its chargebacks have not arrived.' },
   ],
 })
 
@@ -144,7 +149,8 @@ const out5 = outputOf(s5, 'python -m globalbank.train')
 const sizes5 = out5.match(/trained on ([\d,]+) rows \((\d+) fraud\), tested on ([\d,]+) \((\d+) fraud\)/)!
 const metric5 = (k: string) => out5.match(new RegExp(`^\\s+${k}\\s+([\\d.]+)$`, 'm'))![1]
 const weights5 = all(out5.match(/weights\s+(.*)$/m)![1], /(\w+) ([+-][\d.]+)/g).map((m) => ({ x: m[1], w: Number(m[2]) }))
-const train5Scene: SceneModel = ideFrame({
+const train5Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['requirements.txt', 'globalbank/features.py', 'globalbank/train.py'], 'globalbank/train.py', ['globalbank/train.py']),
   editor: { file: 'globalbank/train.py', code: train5, show: [[1, 2], [lineOf(train5, "mlflow.set_experiment"), lineOf(train5, 'registered_model_name=MODEL)')]], highlight: linesFrom(train5, "with mlflow.start_run(run_name='logreg-sep12') as run:", 'mlflow.log_metrics(metrics)') },
   session: s5,
@@ -173,7 +179,8 @@ const blocks6 = s6.split(/^\$ /m).slice(1)
 const versions6 = (b: string) => all(b, /^\s+version (\d+)\s+(\w+)\s*(\w*)$/gm).map((m) => ({ v: m[1], status: m[2], alias: m[3] }))
 const before6 = versions6(blocks6[0])
 const after6 = versions6(blocks6[1])
-const registry6Scene: SceneModel = ideFrame({
+const registry6Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/registry.py', 'globalbank/train.py'], 'globalbank/registry.py', ['globalbank/registry.py']),
   editor: { file: 'globalbank/registry.py', code: registry6, highlight: [lineOf(registry6, "client.set_registered_model_alias(MODEL, 'champion', sys.argv[2])")] },
   session: s6,
@@ -200,7 +207,8 @@ const registry6Scene: SceneModel = ideFrame({
 const out7 = outputOf(s7, 'python -m globalbank.score 2026-10-22 0.9')
 const head7 = out7.split('\n')[0]
 const flagged7 = all(out7, /^\s+(K\d+)\s+(\d+) auths\s+first (\d\d:\d\d)\s+score ([\d.]+)$/gm).map((m) => m.slice(1, 5))
-const score7Scene: SceneModel = ideFrame({
+const score7Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/registry.py', 'globalbank/score.py', 'globalbank/train.py'], 'globalbank/score.py', ['globalbank/score.py']),
   editor: { file: 'globalbank/score.py', code: score7, ...view(score7, 'day, threshold = '), highlight: linesFrom(score7, "CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'", "batch['score'] = model.predict_proba(batch[X])[:, 1]") },
   session: s7,
@@ -227,7 +235,8 @@ const score7Scene: SceneModel = ideFrame({
 const out8 = outputOf(s8, 'python -m globalbank.tradeoff')
 const head8 = out8.split('\n')[0]
 const rows8 = all(out8, /^\s*([\d.]+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)$/gm).map((m) => m.slice(1, 7))
-const tradeoff8Scene: SceneModel = ideFrame({
+const tradeoff8Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/score.py', 'globalbank/tradeoff.py'], 'globalbank/tradeoff.py', ['globalbank/tradeoff.py']),
   editor: { file: 'globalbank/tradeoff.py', code: tradeoff8, ...view(tradeoff8, 'spark = get_spark()'), highlight: linesFrom(tradeoff8, 'for t in (0.5, 0.7, 0.9, 0.97, 0.99):', "f'  {len(hit) / len(fraud):>6.2f}  {hit.amount.sum():>16}')") },
   session: s8,

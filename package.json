@@ -26,8 +26,8 @@
     "thumb:film": "node scripts/thumb-film.mjs"
   },
   "dependencies": {
-    "@graphlearning/graphl-flow": "^0.3.0",
-    "@graphlearning/shell": "^1.0.2",
+    "@graphlearning/graphl-flow": "0.11.0",
+    "@graphlearning/shell": "1.1.0",
     "lucide-react": "^1.28.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

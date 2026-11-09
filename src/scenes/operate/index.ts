@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, linesFrom } from '../ide'
+import { linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { appMap } from '../map'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
@@ -20,7 +21,8 @@ import flags from '../../../spine/detect/07-score/session.txt?raw'
 // documented map of where each part goes next.
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
-const FILL = { spread: true, minH: 520 } as const
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
     files: ['.venv/', 'landing/', 'globalbank/session.py', 'globalbank/land.py', ...files, 'pipelines/', 'resources/', 'databricks.yml'],
@@ -44,7 +46,8 @@ const MEANS: Record<string, string> = {
   SQL: 'the SQL warehouse (Course 8)',
   JOBS: 'Lakeflow Jobs (Course 10)',
 }
-const cost1Scene: SceneModel = ideFrame({
+const cost1Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/cost.py'], 'globalbank/cost.py', ['globalbank/cost.py']),
   editor: { file: 'globalbank/cost.py', code: cost1, highlight: linesFrom(cost1, 'SELECT billing_origin_product AS product', 'GROUP BY ALL ORDER BY dbus DESC') },
   session: s1,
@@ -58,7 +61,6 @@ const cost1Scene: SceneModel = ideFrame({
       type: 'table', id: 'what', title: 'What each line of the bill is', tone: 'consume', columns: ['product', 'what it is'],
       rows: rows1.map((r) => ({ id: `w-${r.product}`, cells: [r.product, MEANS[r.product] ?? 'see the billing docs'] })),
     },
-    { type: 'note', id: 'note', tone: 'consume', text: `The bill reaches ${head1[2]}: system.billing.usage arrives hours after the work, so the latest pipeline, warehouse and job runs are not on it yet. Cost is shown in DBUs; prices depend on the contract, and this course never quotes them.` },
   ],
 })
 
@@ -68,7 +70,8 @@ const files2 = s2.split(/^\$ /m).slice(1).filter((b) => b.startsWith('python -m 
   return { files: Number(m[1]), mb: m[2], kb: Number(m[3]) }
 })
 const opt2 = outputOf(s2, `python -m globalbank.optimize ${T}`).match(/(\d+) files removed, (\d+) added/)!
-const small2: SceneModel = ideFrame({
+const small2: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/files.py', 'globalbank/optimize.py'], 'globalbank/optimize.py', ['globalbank/files.py', 'globalbank/optimize.py']),
   editor: { file: 'globalbank/optimize.py', code: optimize2, highlight: [linesFrom(optimize2, "m = get_spark().sql(f'OPTIMIZE {table}')")[0]] },
   session: s2,
@@ -84,14 +87,14 @@ const small2: SceneModel = ideFrame({
         { id: 's-after', cells: ['after', String(files2[1].files), files2[1].mb, String(files2[1].kb)], tone: 'store' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'store', text: 'Every file a query opens costs a request and a footer read. A stream that lands every 15 minutes writes small files all day; compaction is the price of fresh data, paid later and in bulk.' },
   ],
 })
 
 // §3 — liquid clustering: the same query, files read by layout.
 const out3 = outputOf(s3, 'python -m globalbank.cluster')
 const read3 = all(out3, /^silver\.auths_(\w+)\s+files read\s+(\d+), skipped\s+(\d+)$/gm).map((m) => ({ t: m[1], read: Number(m[2]), skipped: Number(m[3]) }))
-const cluster3Scene: SceneModel = ideFrame({
+const cluster3Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/cluster.py', 'globalbank/optimize.py'], 'globalbank/cluster.py', ['globalbank/cluster.py']),
   editor: { file: 'globalbank/cluster.py', code: cluster3, ...view(cluster3, 'spark = get_spark()'), highlight: linesFrom(cluster3, "for name, layout in (('by_arrival', ''), ('clustered',", "'CLUSTER BY (merchant_id, auth_ts)')):") },
   session: s3,
@@ -123,7 +126,8 @@ const out4 = outputOf(s4, 'python -m globalbank.predictive')
 const po4 = out4.split('\n').find((l) => l.startsWith('Predictive')) ?? 'Predictive Optimization: (not reported)'
 const ops4 = all(out4, /^\s{2}(\w+)\s+(\d+)$/gm).map((m) => ({ op: m[1], n: m[2] }))
 const hist4 = (out4.match(/by operation: (.*)$/m)?.[1] ?? '').split(', ').filter(Boolean)
-const predictive4Scene: SceneModel = ideFrame({
+const predictive4Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/cluster.py', 'globalbank/predictive.py'], 'globalbank/predictive.py', ['globalbank/predictive.py']),
   editor: { file: 'globalbank/predictive.py', code: predictive4, highlight: linesFrom(predictive4, 'FROM system.storage.predictive_optimization_operations_history', "WHERE catalog_name = 'globalbank_dev'") },
   session: s4,
@@ -143,7 +147,6 @@ const predictive4Scene: SceneModel = ideFrame({
         { id: 'w-stats', cells: ['statistics', 'ANALYZE', 'keeps them current'] },
       ],
     },
-    { type: 'note', id: 'note', tone: 'infra', text: 'No operations yet: predictive optimization acts on managed tables once they have lived long enough to show how they are used. These are hours old.' },
   ],
 })
 

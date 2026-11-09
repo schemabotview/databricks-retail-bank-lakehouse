@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import drift1 from '../../../spine/ship/01-drift/project/globalbank/drift.py?raw'
@@ -23,7 +24,8 @@ import s7 from '../../../spine/ship/07-ci/session.txt?raw'
 // target is validated, not deployed (one workspace); 11.7's deploy from GitHub is documented.
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
-const FILL = { spread: true, minH: 520 } as const
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
     files: ['.venv/', 'landing/', ...files, 'globalbank/', 'pipelines/', 'sql/'],
@@ -36,7 +38,8 @@ const field = (out: string, name: string) => out.match(new RegExp(`^\\s*${name}:
 // §1 — the workspace is not git: a click changes the deployed job, and the repo never hears of it.
 const out1 = outputOf(s1, 'python -m globalbank.drift')
 const drift = all(out1, /^ {2}(\w+)\s+repo: (.*?)\s+workspace: (.*)$/gm).map((m) => ({ key: m[1], repo: m[2], live: m[3] }))
-const drift1Scene: SceneModel = ideFrame({
+const drift1Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/drift.py', 'resources/nightly.yml'], 'globalbank/drift.py', ['globalbank/drift.py']),
   editor: { file: 'globalbank/drift.py', code: drift1, highlight: linesFrom(drift1, 'edited = w.jobs.get(job_id(w)).settings', 'w.jobs.reset(job_id(w), new_settings=edited)') },
   session: s1,
@@ -61,7 +64,8 @@ const drift1Scene: SceneModel = ideFrame({
 
 // §2 — a bundle: databricks.yml, and the resources it includes.
 const out2 = outputOf(s2, `${B} validate`)
-const bundle2Scene: SceneModel = ideFrame({
+const bundle2Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml', 'resources/nightly.yml', 'dashboards/'], 'databricks.yml', ['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml']),
   editor: { file: 'databricks.yml', code: bundle2, lang: 'text', highlight: linesFrom(bundle2, 'bundle:', '  - resources/*.yml') },
   session: s2,
@@ -115,7 +119,8 @@ const resources3: SceneModel = {
 // §4 — targets: one bundle, dev and prod.
 const dev4 = outputOf(s4, `${B} validate -t dev | sed -n 1,5p`)
 const prod4 = outputOf(s4, `${B} validate -t prod | sed -n 1,5p`)
-const targets4: SceneModel = ideFrame({
+const targets4: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['databricks.yml', 'resources/'], 'databricks.yml'),
   editor: { file: 'databricks.yml', code: bundle4, lang: 'text', show: [[lineOf(bundle4, 'variables:'), lineOf(bundle4, 'variables: {catalog: globalbank_prod}')]], highlight: linesFrom(bundle4, 'targets:', 'variables: {catalog: globalbank_prod}') },
   session: s4,
@@ -140,7 +145,6 @@ const targets4: SceneModel = ideFrame({
         { id: 'x-sched', cells: ['triggers', 'paused', 'live'] },
       ],
     },
-    { type: 'note', id: 'note', tone: 'consume', text: 'Free Edition has one workspace and one pipeline per type, so prod is validated, not deployed. A real bank’s prod is another workspace, and the prod target names its host.' },
   ],
   edges: [
     { from: 't-bundle', to: 't-dev' },
@@ -152,7 +156,8 @@ const targets4: SceneModel = ideFrame({
 const deploy5 = outputOf(s5, `${B} deploy`).split('\n').filter(Boolean).map((l) => l.replace(/ to \/Workspace\S+/, ' to the bundle folder'))
 const run5 = outputOf(s5, `${B} run globalbank_nightly 2>&1 | grep TERMINATED`)
 const state5 = run5.match(/"([^"]+)" (\w+)(?: (\w+))?/)
-const deployRun5: SceneModel = ideFrame({
+const deployRun5: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['databricks.yml', 'resources/nightly.yml', 'resources/globalbank_pipeline.yml', 'resources/dashboard.yml'], 'resources/nightly.yml'),
   editor: { file: 'resources/nightly.yml', code: nightly5, lang: 'text', ...view(nightly5, '      tasks:', undefined, 0), highlight: linesFrom(nightly5, 'pipeline_id: ${resources.pipelines.globalbank_pipeline.id}') },
   session: s5,
@@ -167,7 +172,6 @@ const deployRun5: SceneModel = ideFrame({
         { type: 'item', id: 'd-run', title: state5 ? state5[1] : 'globalbank_nightly', sub: state5 ? `${state5[2]} ${state5[3] ?? ''}`.trim() : '', icon: 'workflow', tone: 'ingest' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'ingest', text: 'In development mode the file trigger is paused, so bundle run starts the job once by hand. The next deploy changes only what the YAML changed.' },
   ],
   edges: [...deploy5.map((_, i) => ({ from: `d-${i}`, to: i + 1 < deploy5.length ? `d-${i + 1}` : 'd-run' }))],
 })
@@ -176,7 +180,8 @@ const deployRun5: SceneModel = ideFrame({
 const unit6 = outputOf(s6, '.venv-test/bin/python -m pytest -q tests/test_transforms.py 2>&1 | tail -1')
 const ws6 = outputOf(s6, 'python -m pytest -q tests/test_workspace.py 2>&1 | tail -1')
 const passed = (out: string) => out.match(/(\d+) passed/)?.[1] ?? '0'
-const tests6: SceneModel = ideFrame({
+const tests6: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['tests/test_transforms.py', 'tests/test_workspace.py', 'globalbank/transforms.py', 'requirements.txt'], 'tests/test_transforms.py', ['tests/test_transforms.py', 'tests/test_workspace.py', 'globalbank/transforms.py']),
   editor: { file: 'tests/test_transforms.py', code: test6, ...view(test6, '@pytest.fixture', undefined, 0), highlight: linesFrom(test6, 'def test_velocity_counts_ten_minutes', '[1, 2, 3, 4, 5, 6, 1]') },
   session: s6,
@@ -205,7 +210,8 @@ const tests6: SceneModel = ideFrame({
 // §7 — CI: the workflow is real; deploying from GitHub is documented (a service principal's OAuth
 // secret needs the account console, which Free Edition does not have).
 const out7 = outputOf(s7, `${B} validate -t prod | tail -1`)
-const ci7: SceneModel = ideFrame({
+const ci7: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['.github/workflows/deploy.yml', 'databricks.yml', 'tests/'], '.github/workflows/deploy.yml', ['.github/workflows/deploy.yml']),
   editor: { file: '.github/workflows/deploy.yml', code: workflow7, lang: 'text', ...view(workflow7, 'jobs:', undefined, 0), highlight: linesFrom(workflow7, '  deploy:', 'run: databricks bundle deploy -t prod') },
   session: s7,
@@ -218,7 +224,6 @@ const ci7: SceneModel = ideFrame({
         { type: 'item', id: 'c-deploy', title: 'bundle deploy -t prod', sub: `as a service principal · here: ${out7}`, icon: 'databricks', tone: 'consume' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'consume', text: 'Documented (docs.databricks.com, checked 2026-10-27): deploying from GitHub needs a service principal’s OAuth secret, made in the account console, which Free Edition does not have. The prod validate ran on the workspace.' },
   ],
   edges: [
     { from: 'c-pr', to: 'c-test' },

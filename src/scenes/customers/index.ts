@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import record1 from '../../../spine/customers/01-change-records/project/globalbank/record.py?raw'
@@ -25,7 +26,8 @@ import s7 from '../../../spine/customers/07-point-in-time/session.txt?raw'
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
 const num = (s: string) => Number(s.replace(/,/g, ''))
 const fmt = (n: number) => n.toLocaleString('en')
-const FILL = { spread: true, minH: 520 } as const
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const PKG = ['globalbank/__init__.py', 'globalbank/session.py', 'globalbank/land.py']
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
@@ -45,30 +47,26 @@ const silverNow = (out: string) => { const m = out.match(/silver now: seq (\d+),
 const landed1 = outputOf(s1, 'python -m globalbank.land core_cdc')
 const total1 = num(landed1.match(/= ([\d,]+) rows/)![1])
 const out1 = outputOf(s1, 'python -m globalbank.record 12155')
-const counts1 = all(out1.split('\n')[0], /(\w+) (\w) ([\d,]+)/g).map((m) => ({ table: m[1], op: m[2], n: num(m[3]) }))
 const head1 = out1.match(/op (\w)\s+seq (\d+)\s+table (\w+)\s+ts (.+)$/m)!
 const opName: Record<string, string> = { I: 'insert', U: 'update', D: 'delete' }
-const records1: SceneModel = ideFrame({
+const records1: SceneModel = ideFrame2({
+  model: 'A change record: op, seq, key, after',
   tree: tree(['globalbank/catalog.py', 'globalbank/record.py'], 'globalbank/record.py', ['globalbank/record.py']),
   editor: { file: 'globalbank/record.py', code: record1, highlight: linesFrom(record1, 'counts = spark.sql', 'GROUP BY ALL') },
   session: s1,
   side: [
     {
       type: 'table', id: 'record', title: `One change, taken apart: seq ${head1[2]}`, tone: 'source', columns: ['field', 'value', 'means'], rows: [
-        { id: 'f-op', cells: ['op', head1[1], `an ${opName[head1[1]]}`], tone: 'source' },
-        { id: 'f-seq', cells: ['seq', head1[2], 'the core system’s commit order'], tone: 'source' },
-        { id: 'f-ts', cells: ['ts', head1[4].split(' ')[0], 'when it changed'] },
-        { id: 'f-table', cells: ['table', head1[3], 'which core table'] },
-        { id: 'f-key', cells: ['key', '{"customer_id": …}', 'which row'] },
-        { id: 'f-after', cells: ['after', 'the whole row, after', 'kept as JSON text in bronze'] },
+        { id: 'f-op', cells: ['op', head1[1], opName[head1[1]]], tone: 'source' },
+        { id: 'f-seq', cells: ['seq', head1[2], 'commit order'], tone: 'source' },
+        { id: 'f-ts', cells: ['ts', head1[4].split(' ')[0], 'when'] },
+        { id: 'f-table', cells: ['table', head1[3], 'core table'] },
+        { id: 'f-key', cells: ['key', '{customer_id}', 'which row'] },
+        { id: 'f-after', cells: ['after', 'the row', 'JSON text'] },
       ],
     },
     {
-      type: 'table', id: 'counts', title: `${fmt(total1)} changes in bronze.core_cdc`, tone: 'ingest', columns: ['table', 'op', 'records'],
-      rows: counts1.map((c) => ({ id: `c-${c.table}-${c.op}`, cells: [c.table, `${c.op} (${opName[c.op]})`, fmt(c.n)], tone: c.op === 'D' ? 'consume' as const : undefined })),
-    },
-    {
-      type: 'group', id: 'trip', title: 'One change, from commit to bronze', icon: 'workflow', tone: 'source', dir: 'row', children: [
+      type: 'group', id: 'trip', title: 'One change, from commit to bronze', icon: 'workflow', tone: 'source', children: [
         { type: 'item', id: 't-core', title: 'core system', sub: 'commits seq', icon: 'database' },
         { type: 'item', id: 't-cdc', title: 'CDC tool', sub: 'two files a day', icon: 'file' },
         { type: 'item', id: 't-bronze', title: 'bronze', sub: 'as received', icon: 'layers' },
@@ -84,7 +82,8 @@ const records1: SceneModel = ideFrame({
 // §2 — current state with MERGE: the latest change per key, applied to silver (SCD type 1).
 const sept2 = applied(outputOf(s2, apply('customers', '2026-09-')))
 const oct2 = applied(outputOf(s2, apply('customers', '2026-10-0[1-8]')))
-const current2: SceneModel = ideFrame({
+const current2: SceneModel = ideFrame2({
+  model: 'The latest change per key, merged',
   tree: tree(['globalbank/cdc.py', 'globalbank/record.py'], 'globalbank/cdc.py', ['globalbank/cdc.py']),
   editor: { file: 'globalbank/cdc.py', code: cdc2, ...view(cdc2, 'def apply', 'return batch.count()', 0), highlight: linesFrom(cdc2, 'MERGE INTO', "WHEN NOT MATCHED AND s.op != 'D'") },
   session: s2,
@@ -97,9 +96,9 @@ const current2: SceneModel = ideFrame({
       ],
     },
     {
-      type: 'table', id: 'batches', title: 'Two batches', tone: 'ingest', columns: ['batch', 'changes', 'inserted', 'updated', 'rows after'], rows: [
-        { id: 'r-sept', cells: ['September', fmt(sept2.changes), fmt(sept2.inserted), fmt(sept2.updated), fmt(sept2.rows)], tone: 'ingest' },
-        { id: 'r-oct', cells: ['1–8 October', fmt(oct2.changes), fmt(oct2.inserted), fmt(oct2.updated), fmt(oct2.rows)], tone: 'ingest' },
+      type: 'table', id: 'batches', title: 'Two batches', tone: 'ingest', columns: ['batch', 'inserted', 'updated', 'rows'], rows: [
+        { id: 'r-sept', cells: ['Sept', fmt(sept2.inserted), fmt(sept2.updated), fmt(sept2.rows)], tone: 'ingest' },
+        { id: 'r-oct', cells: ['1–8 Oct', fmt(oct2.inserted), fmt(oct2.updated), fmt(oct2.rows)], tone: 'ingest' },
       ],
     },
   ],
@@ -123,24 +122,26 @@ const pair = o3.arrivals.filter((a) => a.file.startsWith('2026-10-09'))
 const newest = pair.reduce((a, b) => (b.seq > a.seq ? b : a))
 const orderTable = (id: string, title: string, o: typeof o3) => ({
   type: 'table' as const, id, title, tone: 'source' as const, columns: ['arrived in', 'seq', 'address'],
-  rows: o.arrivals.map((a) => ({ id: `${id}-${a.seq}`, cells: [a.file, String(a.seq), a.address], tone: a.seq === o.now.seq ? 'consume' as const : undefined })),
+  rows: o.arrivals.map((a) => ({ id: `${id}-${a.seq}`, cells: [a.file.split('/').at(-1)!.replace(/\.\w+$/, ''), String(a.seq), a.address], tone: a.seq === o.now.seq ? 'consume' as const : undefined })),
 })
-const outOfOrder3: SceneModel = ideFrame({
+const outOfOrder3: SceneModel = ideFrame2({
+  model: 'Arrival order is not commit order',
   tree: tree(['globalbank/cdc.py', 'globalbank/customer.py'], 'globalbank/customer.py', ['globalbank/customer.py']),
   editor: { file: 'globalbank/customer.py', code: customer3, highlight: linesFrom(customer3, 'SELECT regexp_extract', 'ORDER BY source_file, seq') },
   session: s3,
   side: [
     orderTable('arrivals', 'C000001’s changes, as they arrived', o3),
     {
-      type: 'table', id: 'two', title: 'Two orderings, two answers', tone: 'consume', columns: ['applied by', 'last write', 'address'], rows: [
-        { id: 'o-arrival', cells: ['arrival (this MERGE)', `seq ${o3.now.seq}`, o3.now.address], tone: 'consume' },
-        { id: 'o-seq', cells: ['sequence (the core)', `seq ${newest.seq}`, newest.address], tone: 'ingest' },
+      type: 'table', id: 'two', title: 'Two orderings, two answers', tone: 'consume', columns: ['applied by', 'last', 'address'], rows: [
+        { id: 'o-arrival', cells: ['arrival', `seq ${o3.now.seq}`, o3.now.address], tone: 'consume' },
+        { id: 'o-seq', cells: ['seq', `seq ${newest.seq}`, newest.address], tone: 'ingest' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'consume', text: `The later change (seq ${newest.seq}) arrived first. Applying files in arrival order let the older one overwrite it: silver now holds an address the customer has already left.` },
   ],
+  edges: [{ from: 'arrivals', to: 'two', label: 'MERGE, file by file' }],
 })
-const inSequence4: SceneModel = ideFrame({
+const inSequence4: SceneModel = ideFrame2({
+  model: 'Apply a change only if it is newer',
   tree: tree(['globalbank/cdc.py', 'globalbank/customer.py'], 'globalbank/cdc.py'),
   editor: { file: 'globalbank/cdc.py', code: cdc4, ...view(cdc4, 'def apply', 'return batch.count()', 0), highlight: [lineOf(cdc4, "s.seq > t.seq AND s.op = 'D'"), lineOf(cdc4, 'WHEN MATCHED AND s.seq > t.seq THEN')] },
   session: s4,
@@ -154,8 +155,8 @@ const inSequence4: SceneModel = ideFrame({
     },
     {
       type: 'table', id: 'files', title: 'The same two files, applied again', tone: 'ingest', columns: ['file', 'changes', 'updated'], rows: [
-        { id: 'f-1', cells: [OOO[0], fmt(o4.first.changes), fmt(o4.first.updated)] },
-        { id: 'f-2', cells: [OOO[1], fmt(o4.second.changes), fmt(o4.second.updated)], tone: 'ingest' },
+        { id: 'f-1', cells: [OOO[0].split('/')[1], fmt(o4.first.changes), fmt(o4.first.updated)] },
+        { id: 'f-2', cells: [OOO[1].split('/')[1], fmt(o4.second.changes), fmt(o4.second.updated)], tone: 'ingest' },
         { id: 'f-now', cells: ['silver now', `seq ${o4.now.seq}`, o4.now.address], tone: 'ingest' },
       ],
     },
@@ -172,7 +173,8 @@ const oct5 = applied(outputOf(s5, apply('accounts', '2026-10-0')))
 const closed5 = outputOf(s5, 'python -m globalbank.closed')
 const dRecords = num(closed5.match(/^(\d+) D records/m)![1])
 const inSilver = num(closed5.match(/; (\d+) of their accounts in silver/)![1])
-const deletes5: SceneModel = ideFrame({
+const deletes5: SceneModel = ideFrame2({
+  model: 'A D record deletes the silver row',
   tree: tree(['globalbank/cdc.py', 'globalbank/closed.py', 'globalbank/customer.py'], 'globalbank/cdc.py', ['globalbank/closed.py']),
   editor: { file: 'globalbank/cdc.py', code: cdc5, ...view(cdc5, 'TABLES = {', 'def apply', 0), highlight: linesFrom(cdc5, "'accounts': ('account_id'", "opening_balance DECIMAL(18,2)'),") },
   session: s5,
@@ -185,13 +187,12 @@ const deletes5: SceneModel = ideFrame({
       ],
     },
     {
-      type: 'table', id: 'batches', title: 'silver.accounts, two batches', tone: 'consume', columns: ['batch', 'changes', 'inserted', 'deleted', 'rows'], rows: [
-        { id: 'a-sept', cells: ['September', fmt(sept5.changes), fmt(sept5.inserted), fmt(sept5.deleted), fmt(sept5.rows)] },
-        { id: 'a-oct', cells: ['1–9 October', fmt(oct5.changes), fmt(oct5.inserted), fmt(oct5.deleted), fmt(oct5.rows)], tone: 'consume' },
-        { id: 'a-d', cells: ['D records in bronze', fmt(dRecords), '', '', `${inSilver} in silver`], tone: 'ingest' },
+      type: 'table', id: 'batches', title: 'silver.accounts, two batches', tone: 'consume', columns: ['batch', 'inserted', 'deleted', 'rows'], rows: [
+        { id: 'a-sept', cells: ['Sept', fmt(sept5.inserted), fmt(sept5.deleted), fmt(sept5.rows)] },
+        { id: 'a-oct', cells: ['1–9 Oct', fmt(oct5.inserted), fmt(oct5.deleted), fmt(oct5.rows)], tone: 'consume' },
+        { id: 'a-d', cells: ['D in bronze', '', fmt(dRecords), `${inSilver} left`], tone: 'ingest' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'consume', text: `Some accounts opened and closed inside September: their latest change is the D, so they never reach silver. All ${dRecords} closings stay in bronze, with their file and sequence: when an account closed is answered there.` },
   ],
   edges: [
     { from: 'd-bronze', to: 'd-rec', label: 'MERGE' },
@@ -204,46 +205,50 @@ const out6 = outputOf(s6, 'python -m globalbank.scd2 C000001')
 const [, versions6, customers6] = out6.match(/: ([\d,]+) versions of ([\d,]+) customers/)!
 const timeline6 = all(out6, /^\|(\d+)\s*\|(\S+ \S+)\|(\S+(?: \S+)?)\s*\|(.+?)\s*\|(\w+)\s*\|$/gm)
   .map((m) => ({ seq: m[1], from: m[2], to: m[3].trim(), address: m[4], kyc: m[5] }))
-const history6: SceneModel = ideFrame({
+const history6: SceneModel = ideFrame2({
+  model: 'Each version holds until the next',
   tree: tree(['globalbank/cdc.py', 'globalbank/customer.py', 'globalbank/scd2.py'], 'globalbank/scd2.py', ['globalbank/scd2.py']),
   editor: { file: 'globalbank/scd2.py', code: scd6, ...view(scd6, 'def build', "WHERE `table` = 'customers'", 0), highlight: linesFrom(scd6, 'lead(ts) OVER', 'valid_to IS NULL AS is_current') },
   session: s6,
   side: [
+    { type: 'item', id: 'cdc', title: 'bronze.core_cdc', sub: 'every change, in seq order', icon: 'layers', tone: 'source' },
     {
-      type: 'table', id: 'timeline', title: 'C000001, every version', tone: 'ingest', columns: ['valid from', 'valid to', 'address', 'KYC'],
-      rows: timeline6.map((t) => ({ id: `t-${t.seq}`, cells: [t.from.slice(0, 16), t.to === 'NULL' ? 'now' : t.to.slice(0, 16), t.address, t.kyc], tone: t.to === 'NULL' ? 'ingest' as const : undefined })),
-    },
-    {
-      type: 'table', id: 'kinds', title: 'Two silver tables, two questions', tone: 'store', columns: ['table', 'rows', 'answers'], rows: [
-        { id: 'k-1', cells: ['silver.customers', fmt(num(customers6)), 'who is the customer now?'] },
-        { id: 'k-2', cells: ['silver.customers_history', fmt(num(versions6)), 'who were they on a date?'], tone: 'ingest' },
+      type: 'group', id: 'two', bare: true, dir: 'row', children: [
+        { type: 'item', id: 'k-now', title: `customers: ${fmt(num(customers6))}`, sub: 'who now?', icon: 'users' },
+        { type: 'item', id: 'k-hist', title: `history: ${fmt(num(versions6))}`, sub: 'who on a date?', icon: 'clock', tone: 'ingest' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'ingest', text: 'Ordered by seq, not by arrival: the history is right even for the pair that arrived the wrong way round.' },
+    {
+      type: 'table', id: 'timeline', title: 'C000001, every version', tone: 'ingest', columns: ['valid from', 'address', 'KYC'],
+      rows: timeline6.map((t) => ({ id: `t-${t.seq}`, cells: [t.from.slice(5, 16), t.address, t.kyc], tone: t.to === 'NULL' ? 'ingest' as const : undefined })),
+    },
   ],
+  edges: [{ from: 'cdc', to: 'k-now', label: 'latest' }, { from: 'cdc', to: 'k-hist', label: 'all' }],
 })
 
 // §7 — a point-in-time join: the KYC status then, not now.
 const out7 = outputOf(s7, 'python -m globalbank.pit')
 const [, paid7, differ7] = out7.match(/^([\d,]+) payments; ([\d,]+) with another KYC status then/m)!
 const rows7 = all(out7, /^\|(au-\S+)\s*\|(\S+ \S+)\|(C\d+)\s*\|(\w+)\s*\|(\w+)\s*\|$/gm).map((m) => m.slice(1, 6))
-const pit7Scene: SceneModel = ideFrame({
+const pit7Scene: SceneModel = ideFrame2({
+  model: 'Join the past to history, not to now',
   tree: tree(['globalbank/cdc.py', 'globalbank/pit.py', 'globalbank/scd2.py'], 'globalbank/pit.py', ['globalbank/pit.py']),
   editor: { file: 'globalbank/pit.py', code: pit7, highlight: linesFrom(pit7, 'JOIN globalbank_dev.silver.customers_history h', 'OR h.valid_to IS NULL') },
   session: s7,
   side: [
+    { type: 'item', id: 'pay', title: 'one payment', sub: 'customer_id, auth_ts', icon: 'card', tone: 'source' },
     {
-      type: 'table', id: 'joins', title: 'One payment, two joins', tone: 'ingest', columns: ['joined to', 'on', 'answers'], rows: [
-        { id: 'j-now', cells: ['silver.customers', 'customer_id', 'the status today'] },
-        { id: 'j-then', cells: ['customers_history', 'valid_from ≤ auth_ts < valid_to', 'the status then'], tone: 'ingest' },
+      type: 'group', id: 'joins', bare: true, dir: 'row', children: [
+        { type: 'item', id: 'j-now', title: 'silver.customers', sub: 'on customer_id: the status today', icon: 'users' },
+        { type: 'item', id: 'j-then', title: 'customers_history', sub: 'valid_from ≤ auth_ts < valid_to: the status then', icon: 'clock', tone: 'ingest' },
       ],
     },
     {
-      type: 'table', id: 'rows', title: `${differ7} of ${paid7} payments differ`, tone: 'consume', columns: ['auth_ts', 'customer', 'then', 'now'],
-      rows: rows7.map((r) => ({ id: `p-${r[0]}`, cells: [r[1].slice(0, 16), r[2], r[3], r[4]], tone: 'consume' as const })),
+      type: 'table', id: 'rows', title: `${differ7} of ${paid7} payments differ`, tone: 'consume', columns: ['customer', 'then', 'now'],
+      rows: rows7.map((r) => ({ id: `p-${r[0]}`, cells: [r[2], r[3], r[4]], tone: 'consume' as const })),
     },
-    { type: 'note', id: 'note', tone: 'consume', text: 'Joined to the current table, these payments look as if unverified customers made them. They did not: the status changed after they paid. Questions about the past join to history.' },
   ],
+  edges: [{ from: 'pay', to: 'j-now', label: 'now' }, { from: 'pay', to: 'j-then', label: 'then' }],
 })
 
 // §8 — ◆ managed connectors: DOCUMENTED. Lakeflow Connect reads the core database itself; Free

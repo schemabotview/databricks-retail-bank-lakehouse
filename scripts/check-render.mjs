@@ -34,6 +34,8 @@ const SIDE_FILL = +(process.env.SIDE_FILL ?? 2 / 3)
 
 const { COURSES, SCENES } = await loadRegistry()
 const sections = Object.values(COURSES).flatMap((c) => c.sections.map((s) => ({ slug: `${c.id}-${s.id}`, section: s, scene: SCENES[s.scene] })))
+  // `node scripts/check-render.mjs hold` checks only slugs starting with the given prefixes.
+  .filter(({ slug }) => process.argv.length < 3 || process.argv.slice(2).some((p) => slug.startsWith(p)))
 
 const problems = []
 const ide = []
@@ -193,10 +195,14 @@ try {
       let panes = null
       if (ide) {
         panes = Object.fromEntries(['explorer', 'editor', 'terminal', 'side'].map((p) => [p, node(p) && Object.values(R(node(p))).map((v) => Math.round(v))]))
+        // Frame v2 has two variants of one height: the editor/terminal split differs, the fit does not.
+        panes.kind = node('ide-bench') ? 'v2' : 'v1'
         const pane = R(node('side'))
         const leaves = [...node('side').querySelectorAll(LEAVES)].map(R)
         const top = Math.min(...leaves.map((r) => r.y)), bottom = Math.max(...leaves.map((r) => r.y + r.h))
         const fill = leaves.length ? (bottom - top) / pane.h : 0
+        // v2 (a spread, titled pane) is held to the workspace's half; v1 to its own two thirds.
+        limits.fill = node('ide-bench') ? 0.5 : limits.fill
         if (fill < limits.fill) out.push(`the side pane's content spans ${Math.round(fill * 100)}% of its height (< ${Math.round(limits.fill * 100)}%) — fill the column with the diagram`)
       }
       return { problems: [...new Set(out)], panes }
@@ -211,14 +217,18 @@ try {
   await server.close()
 }
 
-// Every IDE frame on the first one's fit, every pane at its pixels.
-const [ref] = ide
-for (const { slug, panes, fit } of ide.slice(1)) {
+// Every IDE frame on its kind's first fit, every pane at its pixels. Two kinds while courses
+// migrate: v1 (ide.ts) and v2 (frame.ts), whose editor and terminal heights depend on the variant.
+for (const kind of ['v1', 'v2']) {
+const frames = ide.filter((f) => f.panes.kind === kind)
+const [ref] = frames
+for (const { slug, panes, fit } of frames.slice(1)) {
   if (fit !== ref.fit) problems.push(`${slug}  fit ${fit} differs from ${ref.slug}'s ${ref.fit} — an IDE frame must not change the zoom`)
-  for (const pane of ['explorer', 'editor', 'terminal', 'side']) {
+  for (const pane of kind === 'v2' ? ['explorer', 'side'] : ['explorer', 'editor', 'terminal', 'side']) {
     const a = ref.panes[pane], b = panes[pane]
     if (!a || !b || a.some((v, i) => v !== b[i])) problems.push(`${slug}  the ${pane} pane is at [${b}], not [${a}] as in ${ref.slug}`)
   }
+}
 }
 
 if (problems.length) {

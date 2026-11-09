@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import s1 from '../../../spine/protect/01-unity-catalog/session.txt?raw'
@@ -27,7 +28,8 @@ import s8 from '../../../spine/protect/08-erasure/session.txt?raw'
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
 const num = (s: string) => Number(s.replace(/,/g, ''))
 const fmt = (n: number) => n.toLocaleString('en')
-const FILL = { spread: true, minH: 520 } as const
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const PKG = ['globalbank/__init__.py', 'globalbank/session.py', 'globalbank/cdc.py']
 const tree = (files: string[], active: string, isNew: string[] = []) =>
   explorer({
@@ -94,7 +96,8 @@ const unityCatalog1: SceneModel = {
 // §2 — grants by layer: written as code; refused on Free Edition, which has no account groups.
 const g2 = govern(outputOf(s2, `${GOV}grants.sql`))
 const reason2 = g2.summary.split(': ')[1] ?? ''
-const grants2Scene: SceneModel = ideFrame({
+const grants2Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['governance/grants.sql', 'globalbank/govern.py'], 'governance/grants.sql', ['governance/grants.sql', 'globalbank/govern.py']),
   editor: { file: 'governance/grants.sql', code: grants2, lang: 'sql', highlight: linesFrom(grants2, 'GRANT USE CATALOG', 'TO `branches`') },
   session: s2,
@@ -127,7 +130,8 @@ const PEEK = 'python -m globalbank.peek'
 const blocks3 = s3.split(/^\$ /m).slice(1)
 const peeks3 = blocks3.filter((b) => b.startsWith(PEEK)).map((b) => peek(b))
 const role3 = outputOf(s3, 'python -m globalbank.roles risk')
-const masks3Scene: SceneModel = ideFrame({
+const masks3Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['governance/grants.sql', 'governance/masks.sql', 'globalbank/peek.py', 'globalbank/roles.py'], 'governance/masks.sql', ['governance/masks.sql', 'globalbank/peek.py', 'globalbank/roles.py']),
   editor: { file: 'governance/masks.sql', code: masks3, lang: 'sql', highlight: linesFrom(masks3, 'RETURN IF(EXISTS', "v, concat('*****', right(v, 3)));") },
   session: s3,
@@ -158,7 +162,8 @@ const masks3Scene: SceneModel = ideFrame({
 const blocks4 = s4.split(/^\$ /m).slice(1)
 const regions = (b: string) => all(b, /(\w+) ([\d,]+)/g).map((m) => ({ region: m[1], n: num(m[2]) }))
 const reg4 = blocks4.filter((b) => b.startsWith('python -m globalbank.regions')).map((b) => regions(b.split('\n').slice(1).join('\n')))
-const filters4Scene: SceneModel = ideFrame({
+const filters4Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['governance/filters.sql', 'governance/masks.sql', 'globalbank/regions.py', 'globalbank/roles.py'], 'governance/filters.sql', ['governance/filters.sql', 'globalbank/regions.py']),
   editor: { file: 'governance/filters.sql', code: filters4, lang: 'sql', highlight: linesFrom(filters4, 'RETURN EXISTS', 'SET ROW FILTER') },
   session: s4,
@@ -177,14 +182,14 @@ const filters4Scene: SceneModel = ideFrame({
         { id: 'w-risk', cells: ['risk', String(reg4[1].length), fmt(reg4[1].reduce((a, r) => a + r.n, 0))], tone: 'ingest' },
       ],
     },
-    { type: 'note', id: 'note', tone: 'store', text: 'The filter runs inside every read of the table, so no query, notebook or dashboard can forget it: one silver table serves every region safely.' },
   ],
 })
 
 // §5 — tags: classify PII columns, then find them.
 const pii5 = outputOf(s5, 'python -m globalbank.pii')
 const tagged5 = all(pii5, /^\s+(\w+)\.(\w+)\.(\w+)\s+(\w+)$/gm).map((m) => ({ schema: m[1], table: m[2], column: m[3], tag: m[4] }))
-const tags5Scene: SceneModel = ideFrame({
+const tags5Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['governance/filters.sql', 'governance/masks.sql', 'governance/tags.sql', 'globalbank/pii.py'], 'governance/tags.sql', ['governance/tags.sql', 'globalbank/pii.py']),
   editor: { file: 'governance/tags.sql', code: tags5, lang: 'sql', highlight: [lineOf(tags5, "SET TAGS ('pii' = 'national_id')"), lineOf(tags5, "SET TAGS ('pii' = 'account_number')")] },
   session: s5,
@@ -212,7 +217,8 @@ const edges6 = all(outputOf(s6, 'python -m globalbank.lineage'), /^(.+?)\s+-> (\
 const nodes6 = [...new Set(edges6.flatMap((e) => [e.from, e.to]))]
 const layer = (n: string) => (n.startsWith('files') ? 'source' : n.startsWith('bronze') ? 'ingest' : n.startsWith('silver') ? 'store' : 'consume') as 'source' | 'ingest' | 'store' | 'consume'
 const nid = (n: string) => `n-${n.replace(/[^a-z0-9]+/gi, '-')}`
-const lineage6Scene: SceneModel = ideFrame({
+const lineage6Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/lineage.py', 'globalbank/scd2.py', 'globalbank/ledger.py'], 'globalbank/lineage.py', ['globalbank/lineage.py']),
   editor: { file: 'globalbank/lineage.py', code: lineage6, highlight: linesFrom(lineage6, 'FROM system.access.table_lineage', "event_time > current_timestamp()") },
   session: s6,
@@ -238,7 +244,8 @@ const lineage6Scene: SceneModel = ideFrame({
 // §7 — audit: who touched silver.customers in the last hour.
 const out7 = outputOf(s7, 'python -m globalbank.audit')
 const rows7 = all(out7, /^\s+(\S+@\S+)\s+(\w+)\s+(\d+)$/gm).map((m) => ({ who: m[1], action: m[2], n: Number(m[3]) }))
-const audit7Scene: SceneModel = ideFrame({
+const audit7Scene: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/audit.py', 'globalbank/lineage.py', 'globalbank/regions.py'], 'globalbank/audit.py', ['globalbank/audit.py']),
   editor: { file: 'globalbank/audit.py', code: audit7, highlight: linesFrom(audit7, 'FROM system.access.audit', 'event_time > current_timestamp()') },
   session: s7,
@@ -268,7 +275,8 @@ const req8 = out8a.match(/request (\S+):/)![1]
 const held8 = all(out8a, /version (\d+) holds them: (\d+) row/g).map((m) => ({ v: m[1], n: m[2] }))
 const facts8 = out8a.match(/still holds (\d+) account row/)![1]
 const out8b = outputOf(s8, 'python -m globalbank.purge')
-const erasure8: SceneModel = ideFrame({
+const erasure8: SceneModel = ideFrame2({
+  model: 'TODO',
   tree: tree(['globalbank/erase.py', 'globalbank/purge.py', 'globalbank/vault.py'], 'globalbank/erase.py', ['globalbank/erase.py', 'globalbank/purge.py', 'globalbank/vault.py']),
   editor: { file: 'globalbank/erase.py', code: erase8, ...view(erase8, 'path = glob.glob', undefined, 0), highlight: [lineOf(erase8, 'DELETE FROM {VAULT}')] },
   session: s8,
@@ -284,7 +292,6 @@ const erasure8: SceneModel = ideFrame({
       type: 'table', id: 'versions', title: 'Time travel still remembers', tone: 'consume', columns: ['version', 'rows for the customer'],
       rows: held8.map((h) => ({ id: `v-${h.v}`, cells: [h.v, h.n], tone: h.n === '1' ? 'consume' as const : 'ingest' as const })),
     },
-    { type: 'note', id: 'note', tone: 'consume', text: `${out8b.split('\n')[0]}. Erasure is complete only when the old files are gone. The retention rule here is illustrative, not legal advice.` },
   ],
   edges: [
     { from: 'e-facts', to: 'e-vault', label: 'customer_id' },

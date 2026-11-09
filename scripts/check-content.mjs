@@ -4,7 +4,7 @@
 //
 //   1. A section must be scene-only and narrated, and its scene must exist.
 //   2. Node ids are unique within a scene (graphl-flow resolves edges and focus by id).
-//   3. An IDE side pane is a DIAGRAM (COURSE-PLAN.md, "The side pane is a diagram"): it holds
+//   3. An IDE side pane is a DIAGRAM (../CLAUDE.md, "Frames"): it holds
 //      an edge, a plot or a table (python-ct's v1 panes were 79 bullet lists and one edge in 90
 //      sections). A bulleted card in a side pane is a caption, so it holds ≤ 3 bullets.
 //   4. An IDE frame draws edges only INSIDE its side pane: an edge between panes widens the gap it
@@ -56,6 +56,18 @@ for (const [id, scene] of Object.entries(SCENES)) {
       if (paneOf(end) !== 'side') problems.push(`scene ${id}  edge ${e.from} → ${e.to}: '${end}' is ${paneOf(end) ? `in the ${paneOf(end)} pane` : 'not a node'} — IDE edges stay inside the side pane`)
   // --- 3. the side pane is a diagram ---------------------------------------------------------------
   const sideEdges = edges.filter((e) => paneOf(e.from) === 'side' && paneOf(e.to) === 'side')
+  // Frame v2 (src/scenes/frame.ts, workbench id `ide-bench`): the side pane is titled with the mental
+  // model and holds ONE diagram (edges or a plot) and at most one table, never a bullet list. Its
+  // editor and terminal are held to their rows by frame.ts itself, which throws.
+  if (all.some(({ node }) => node.id === 'ide-bench')) {
+    const tables = side.filter((n) => n.type === 'table')
+    if (!sideEdges.length && !side.some((n) => n.type === 'plot')) problems.push(`scene ${id}  the side pane has no diagram (no edge, no plot): a table alone is not the mental model`)
+    const loose = tables.filter((t) => !sideEdges.some((e) => [e.from, e.to].some((end) => end.split('.')[0] === t.id)))
+    if (loose.length > 1) problems.push(`scene ${id}  the side pane has ${loose.length} tables outside its diagram (${loose.map((t) => t.id).join(', ')}): at most one`)
+    for (const n of side) if (n.type === 'item' && n.bullets?.length) problems.push(`scene ${id}  '${n.id}' is a bullet list: draw it, or say it in the narration`)
+    for (const n of side) if (n.type === 'note') problems.push(`scene ${id}  '${n.id}' is a note: draw it, or say it in the narration`)
+    continue
+  }
   if (!sideEdges.length && !side.some((n) => n.type === 'table' || n.type === 'plot'))
     problems.push(`scene ${id}  the side pane holds no edge, plot or table — it must carry a diagram, not a list`)
   // --- 5. the editor and terminal hold what they show -------------------------------------------

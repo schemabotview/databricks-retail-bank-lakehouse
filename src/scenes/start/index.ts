@@ -1,5 +1,6 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import readme from '../../../spine/start/01-cli/project/README.md?raw'
@@ -22,14 +23,15 @@ const PKG = ['globalbank/__init__.py', 'globalbank/session.py']
 // The venv from 2.3; landing/ (the generator's local files) only from 2.5, when it first exists.
 const VENV = ['.venv/']
 const LANDED = ['.venv/', 'landing/']
-// A side pane's main diagram stretches to fill its column (check-render: content spans ≥ 2/3).
-const FILL = { spread: true, minH: 520 } as const  // with the side pane's own spread (ide.ts)
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 
 // §1 — the CLI, and how it finds the workspace.
 const cliVersion = outputOf(s1, 'databricks --version').replace('Databricks CLI ', '')
 const authAs = outputOf(s1, 'databricks auth describe | head -3').match(/Authenticated with: (\w+)/)![1]
 const warehouse = outputOf(s1, 'databricks warehouses list').split('\n')[1].trim().split(/\s{2,}/)
-const startCli: SceneModel = ideFrame({
+const startCli: SceneModel = ideFrame2({
+  model: 'A command, an API call, the workspace',
   tree: explorer({ files: ['README.md'], mark: { 'README.md': 'active' } }),
   editor: { file: 'README.md', code: readme, lang: 'text', highlight: linesFrom(readme, 'export DATABRICKS_HOST', 'export DATABRICKS_TOKEN') },
   session: s1,
@@ -44,9 +46,9 @@ const startCli: SceneModel = ideFrame({
     },
     {
       type: 'table', id: 'ways', title: 'Three ways to sign in', tone: 'ingest', columns: ['way', 'used for'], rows: [
-        { id: 'w-env', cells: [`environment, ${authAs}`, 'this course: replays and CI'], tone: 'ingest' },
-        { id: 'w-profile', cells: ['~/.databrickscfg', 'a named profile per workspace'] },
-        { id: 'w-oauth', cells: ['databricks auth login', 'OAuth in the browser: for people'] },
+        { id: 'w-env', cells: [`env (${authAs})`, 'replays, CI'], tone: 'ingest' },
+        { id: 'w-profile', cells: ['~/.databrickscfg', 'a profile each'] },
+        { id: 'w-oauth', cells: ['auth login', 'OAuth: people'] },
       ],
     },
   ],
@@ -112,7 +114,6 @@ const startWhere: SceneModel = {
                 { id: 't-classic', cells: ['classic clusters, your own storage', 'documented only'] },
               ],
             },
-            { type: 'note', id: 'tiers-note', text: 'The planes are documented (Databricks’ architecture docs); the answers on the left are the workspace’s, run.' },
           ],
         },
       ],
@@ -129,7 +130,8 @@ const startWhere: SceneModel = {
 const hello = outputOf(s3, 'python -m globalbank.hello')
 const sparkVersion = hello.match(/Spark (\S+) on serverless/)![1]
 const defaultCatalog = hello.match(/in catalog (\S+)/)![1]
-const startConnect: SceneModel = ideFrame({
+const startConnect: SceneModel = ideFrame2({
+  model: 'The plan goes up; the rows come back',
   tree: explorer({ files: [...VENV, ...PKG, 'globalbank/hello.py', 'README.md', 'requirements.txt'],
     mark: { ...BASE_MARK, 'globalbank/': 'new', 'requirements.txt': 'new', 'globalbank/session.py': 'active' }, note: BASE_NOTE }),
   editor: { file: 'globalbank/session.py', code: sessionPy, highlight: [lineOf(sessionPy, '.serverless()')] },
@@ -139,16 +141,15 @@ const startConnect: SceneModel = ideFrame({
       type: 'group', id: 'flow', title: 'python -m globalbank.hello', icon: 'spark', tone: 'ingest', ...FILL, children: [
         { type: 'item', id: 'f-code', title: 'spark.range(3).show()', sub: 'the PySpark API you know', icon: 'code' },
         { type: 'item', id: 'f-client', title: 'Databricks Connect', sub: 'a Spark Connect client: sends the plan', icon: 'network' },
-        { type: 'item', id: 'f-server', title: 'serverless compute', sub: `Spark ${sparkVersion}: runs the plan`, icon: 'cpu' },
+        { type: 'item', id: 'f-server', title: 'serverless compute', sub: `Spark ${sparkVersion}: runs it, in ${defaultCatalog}`, icon: 'cpu' },
         { type: 'item', id: 'f-back', title: 'rows, back to the laptop', sub: 'only the result crosses', icon: 'table' },
       ],
     },
     {
       type: 'table', id: 'where', title: 'What ran where', tone: 'ingest', columns: ['line', 'ran on'], rows: [
-        { id: 'r-sql', cells: ['current_user(), current_catalog()', 'the workspace'], tone: 'ingest' },
-        { id: 'r-range', cells: ['spark.range(3)', 'the workspace'], tone: 'ingest' },
-        { id: 'r-print', cells: ['print(…)', 'the laptop'] },
-        { id: 'r-cat', cells: [`default catalog: ${defaultCatalog}`, 'so we name ours'] },
+        { id: 'r-sql', cells: ['current_user() …', 'workspace'], tone: 'ingest' },
+        { id: 'r-range', cells: ['spark.range(3)', 'workspace'], tone: 'ingest' },
+        { id: 'r-print', cells: ['print(…)', 'laptop'] },
       ],
     },
   ],
@@ -164,33 +165,29 @@ const out4 = outputOf(s4, 'python -m globalbank.catalog')
 const schemas = out4.match(/^schemas: (.*)$/m)![1].split(', ')
 const volume = out4.match(/^volume:\s+(\S+)$/m)![1]
 const layers = ['landing', 'bronze', 'silver', 'gold']
-const startCatalog: SceneModel = ideFrame({
+const startCatalog: SceneModel = ideFrame2({
+  model: 'catalog.schema.object',
   tree: explorer({ files: [...VENV, ...PKG, 'globalbank/catalog.py', 'globalbank/hello.py', 'README.md', 'requirements.txt'],
     mark: { ...BASE_MARK, 'globalbank/catalog.py': 'active' }, note: BASE_NOTE }),
   editor: { file: 'globalbank/catalog.py', code: catalogPy, highlight: linesFrom(catalogPy, 'def create', "landing.{volume}')") },
   session: s4,
   side: [
+    { type: 'item', id: 'cat', title: 'globalbank_dev', sub: 'a catalog: a name’s first part', icon: 'database', tone: 'ingest' },
     {
-      type: 'group', id: 'tree', title: 'globalbank_dev', sub: 'a catalog: the top of a three-part name', icon: 'database', tone: 'ingest', ...FILL, children: [
-        {
-          type: 'table', id: 'schemas', title: 'its schemas', columns: ['schema', 'holds'],
-          rows: schemas.map((s) => ({
-            id: `sc-${s}`, cells: [s, layers.includes(s) ? `the ${s} layer` : 'made by Databricks'], tone: layers.includes(s) ? 'ingest' as const : undefined,
-          })),
-        },
-        {
-          type: 'table', id: 'vol', title: 'its volume: files, governed like a table', columns: ['in schema', 'path'],
-          rows: [{ id: 'v-landing', cells: ['landing', volume], tone: 'source' as const }],
-        },
-      ],
+      type: 'table', id: 'schemas', title: 'its schemas', tone: 'ingest', columns: ['schema', 'holds'],
+      rows: schemas.map((s) => ({
+        id: `sc-${s}`, cells: [s, layers.includes(s) ? `the ${s} layer` : 'by Databricks'], tone: layers.includes(s) ? 'ingest' as const : undefined,
+      })),
     },
+    { type: 'item', id: 'vol', title: 'a volume: files, governed', sub: volume.replace('/Volumes/globalbank_dev/', '/Volumes/…/'), icon: 'folder', tone: 'source' },
     {
       type: 'table', id: 'names', title: 'Three-part names', tone: 'store', columns: ['catalog', 'schema', 'object'], rows: [
-        { id: 'n-table', cells: ['globalbank_dev', 'bronze', 'card_auths (a table)'] },
-        { id: 'n-volume', cells: ['globalbank_dev', 'landing', 'card_auths (a volume)'] },
+        { id: 'n-table', cells: ['…_dev', 'bronze', 'card_auths: table'] },
+        { id: 'n-volume', cells: ['…_dev', 'landing', 'card_auths: volume'] },
       ],
     },
   ],
+  edges: [{ from: 'cat', to: 'schemas' }, { from: 'schemas', to: 'vol', label: 'landing holds' }],
 })
 
 // §5 — land the first files: generated on the laptop, copied into the volume as they are.
@@ -198,7 +195,8 @@ const copied = outputOf(s5, 'bash land.sh 2026-10-01 | wc -l').trim()
 const firstFiles = outputOf(s5, 'ls landing/card_auths/2026-10-01 | head -3').split('\n').filter(Boolean)
 const local = outputOf(s5, 'ls landing/card_auths/2026-10-01 | wc -l').trim()
 const remote = outputOf(s5, 'databricks fs ls dbfs:/Volumes/globalbank_dev/landing/card_auths/2026-10-01 | wc -l').trim()
-const startLand: SceneModel = ideFrame({
+const startLand: SceneModel = ideFrame2({
+  model: 'Laptop files into a volume',
   tree: explorer({ files: [...LANDED, ...PKG, 'globalbank/catalog.py', 'globalbank_sim/', 'land.sh', 'README.md', 'requirements.txt'],
     mark: { ...BASE_MARK, 'globalbank_sim/': 'new', 'land.sh': 'active' }, note: { ...BASE_NOTE, 'landing/': `${local} files, 1 October` } }),
   editor: { file: 'land.sh', code: landSh, lang: 'shell', highlight: linesFrom(landSh, 'python -m globalbank_sim', 'databricks fs cp') },
@@ -213,8 +211,8 @@ const startLand: SceneModel = ideFrame({
     },
     {
       type: 'table', id: 'files', title: 'A file every 15 minutes', tone: 'source', columns: ['file', 'holds'], rows: [
-        ...firstFiles.map((f) => ({ id: `f-${f}`, cells: [f, 'JSON lines: one per authorization'] })),
-        { id: 'f-count', cells: [`${copied} copied`, 'by databricks fs cp'], tone: 'ingest' as const },
+        ...firstFiles.map((f) => ({ id: `f-${f}`, cells: [f, 'JSON lines'] })),
+        { id: 'f-count', cells: [`${copied} copied`, 'by fs cp'], tone: 'ingest' as const },
       ],
     },
   ],
@@ -228,11 +226,11 @@ const startLand: SceneModel = ideFrame({
 const out6 = outputOf(s6, 'python -m globalbank.first_table')
 const [, rows, table] = out6.match(/^(\d+) rows in (\S+)$/m)!
 const amountType = out6.match(/^amount is (\w+)$/m)![1]
-const history = out6.match(/^\|(\d+)\s*\|(.+?)\s*\|(\d+)\s*\|$/m)!
 const tableInfo = outputOf(s6, `databricks tables get globalbank_dev.bronze.card_auths | grep -E '"(table_type|data_source_format)"'`)
 const fmt = tableInfo.match(/"data_source_format": "(\w+)"/)![1]
 const kind = tableInfo.match(/"table_type": "(\w+)"/)![1]
-const startFirstTable: SceneModel = ideFrame({
+const startFirstTable: SceneModel = ideFrame2({
+  model: 'Files in, a Delta table out',
   tree: explorer({ files: [...LANDED, ...PKG, 'globalbank/catalog.py', 'globalbank/first_table.py', 'globalbank_sim/', 'land.sh', 'README.md'],
     mark: { ...BASE_MARK, 'globalbank/first_table.py': 'active' }, note: BASE_NOTE }),
   editor: { file: 'globalbank/first_table.py', code: firstTable, highlight: linesFrom(firstTable, 'spark.read.json', 'saveAsTable') },
@@ -245,16 +243,10 @@ const startFirstTable: SceneModel = ideFrame({
       ],
     },
     {
-      type: 'table', id: 'history', title: 'DESCRIBE HISTORY', tone: 'infra', columns: ['version', 'operation', 'rows'], rows: [
-        { id: 'h-0', cells: [history[1], history[2].trim(), history[3]], tone: 'infra' },
+      type: 'table', id: 'types', title: 'What inference chose', tone: 'consume', columns: ['column', 'type', 'for money'], rows: [
+        { id: 'ty-amount', cells: ['amount', amountType, 'wrong: binary'], tone: 'consume' },
       ],
     },
-    {
-      type: 'table', id: 'types', title: 'What inference chose', tone: 'consume', columns: ['column', 'type', 'for a bank'], rows: [
-        { id: 'ty-amount', cells: ['amount', amountType, 'binary fractions: wrong for money'], tone: 'consume' },
-      ],
-    },
-    { type: 'note', id: 'note', tone: 'consume', text: 'A managed table: Unity Catalog chose where its files live, and DROP removes them. Course 3 reads amounts as DECIMAL(18,2).' },
   ],
   edges: [{ from: 'm-files', to: 'm-delta', label: 'read.json → saveAsTable' }],
 })

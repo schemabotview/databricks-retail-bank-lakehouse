@@ -1,6 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
-import { ideFrame, lineOf, linesFrom } from '../ide'
+import { lineOf, linesFrom } from '../ide'
+import { SIDE_W, ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import reread from '../../../spine/land/01-reread/project/globalbank/reread.py?raw'
@@ -24,7 +25,8 @@ import s8 from '../../../spine/land/08-reconcile/session.txt?raw'
 
 const all = (text: string, re: RegExp) => [...text.matchAll(re)]
 const num = (s: string) => Number(s.replace(/,/g, ''))
-const FILL = { spread: true, minH: 520 } as const  // with the side pane's own spread (ide.ts)
+// Frame v2: the side pane spreads its blocks over its height itself (frame.ts); a block needs no floor.
+const FILL = {} as const
 const PKG = ['globalbank/__init__.py', 'globalbank/session.py', 'globalbank/catalog.py']
 const TOP = ['.venv/', 'landing/']
 const tree = (files: string[], active: string, isNew: string[] = []) =>
@@ -42,13 +44,14 @@ const runs = (session: string) => all(session, /: ([\d,]+) \+ ([\d,]+) = ([\d,]+
 const reads = all(s1, /^read ([\d,]+) rows from (\d+) files$/gm).map((m) => ({ rows: num(m[1]), files: Number(m[2]) }))
 const fresh = reads.map((r, i) => r.rows - (i ? reads[i - 1].rows : 0))
 const peak = Math.ceil(reads.at(-1)!.rows / 5000) * 5000
-const reread1: SceneModel = ideFrame({
+const reread1: SceneModel = ideFrame2({
+  model: 'A plain read reads every file again',
   tree: tree(['globalbank/reread.py'], 'globalbank/reread.py', ['globalbank/reread.py']),
   editor: { file: 'globalbank/reread.py', code: reread, highlight: [lineOf(reread, 'spark.read.json')] },
   session: s1,
   side: [
     {
-      type: 'plot', id: 'reads', compact: true, title: 'Rows per run: read (left), new (right)',
+      type: 'plot', id: 'reads', compact: true, w: SIDE_W - 34, title: 'Rows per run: read (left), new (right)',
       x: { labels: reads.map((_, i) => (i ? `to ${i + 1} Oct` : '1 Oct')) }, y: { min: 0, max: peak, step: peak / 4 },
       series: [
         { kind: 'bar', points: reads.map((r, i) => [i, r.rows]), label: 'read', tone: 'consume' },
@@ -56,17 +59,17 @@ const reread1: SceneModel = ideFrame({
       ],
     },
     {
-      type: 'table', id: 'cost', title: 'Every run reads every file again', tone: 'consume', columns: ['run', 'files read', 'rows read', 'new'],
+      type: 'table', id: 'cost', title: 'Every run reads every file again', tone: 'consume', columns: ['run', 'files', 'rows read', 'new'],
       rows: reads.map((r, i) => ({ id: `r${i}`, cells: [String(i + 1), String(r.files), r.rows.toLocaleString('en'), fresh[i].toLocaleString('en')] })),
     },
-    { type: 'note', id: 'note', tone: 'consume', text: 'Two months of files would mean reading two months on every run, and nothing stops the same row from being written twice.' },
   ],
 })
 
 // §2 — Auto Loader: cloudFiles + availableNow writes only what is new.
 const r2 = runs(s2)
 const cols2 = types(outputOf(s2, COLS))
-const autoLoader2: SceneModel = ideFrame({
+const autoLoader2: SceneModel = ideFrame2({
+  model: 'Auto Loader reads only new files',
   tree: tree(['globalbank/columns.py', 'globalbank/land.py', 'globalbank/reread.py'], 'globalbank/land.py', ['globalbank/land.py', 'globalbank/columns.py']),
   editor: { file: 'globalbank/land.py', code: land2, ...view(land2, 'def ingest', 'query.awaitTermination()', 0),
     highlight: [lineOf(land2, "format('cloudFiles')"), lineOf(land2, 'availableNow=True')] },
@@ -83,10 +86,6 @@ const autoLoader2: SceneModel = ideFrame({
       type: 'table', id: 'runs', title: 'Two runs', tone: 'ingest', columns: ['run', 'before', 'added', 'after'],
       rows: r2.map((r, i) => ({ id: `run${i}`, cells: [String(i + 1), r.before.toLocaleString('en'), `+ ${r.added.toLocaleString('en')}`, r.after.toLocaleString('en')], tone: 'ingest' as const })),
     },
-    {
-      type: 'table', id: 'types', title: 'What it inferred', tone: 'consume', columns: ['column', 'type'],
-      rows: cols2.filter(([c]) => ['amount', 'auth_ts', '_rescued_data'].includes(c)).map(([c, t]) => ({ id: `t-${c}`, cells: [c, t], tone: c === '_rescued_data' ? undefined : 'consume' as const })),
-    },
   ],
   edges: [
     { from: 'f-files', to: 'f-al', label: 'new files' },
@@ -98,10 +97,11 @@ const autoLoader2: SceneModel = ideFrame({
 const r3 = runs(s3)
 const ckpt = outputOf(s3, 'databricks fs ls dbfs:/Volumes/globalbank_dev/bronze/checkpoints/card_auths').split('\n').filter(Boolean)
 const meaning: Record<string, string> = {
-  _schemas: 'the schema Auto Loader inferred, by version', commits: 'each finished batch', metadata: 'the stream’s id',
-  offsets: 'what each batch was about to read', sources: 'every file already seen',
+  _schemas: 'the inferred schema', commits: 'each finished batch', metadata: 'the stream’s id',
+  offsets: 'each batch’s range', sources: 'every file seen',
 }
-const checkpoint3: SceneModel = ideFrame({
+const checkpoint3: SceneModel = ideFrame2({
+  model: 'The checkpoint belongs to the table',
   tree: tree(['globalbank/columns.py', 'globalbank/land.py'], 'globalbank/land.py'),
   editor: { file: 'globalbank/land.py', code: land2, ...view(land2, 'CHECKPOINT =', 'query.awaitTermination()', 0),
     highlight: [lineOf(land2, 'CHECKPOINT ='), lineOf(land2, ".option('checkpointLocation'")] },
@@ -112,11 +112,10 @@ const checkpoint3: SceneModel = ideFrame({
       rows: ckpt.map((f) => ({ id: `c-${f}`, cells: [f, meaning[f] ?? ''], tone: f === 'sources' ? 'ingest' as const : undefined })),
     },
     {
-      type: 'plot', id: 'rows', compact: true, title: 'Rows in bronze after each run',
+      type: 'plot', id: 'rows', compact: true, w: SIDE_W - 34, title: 'Rows in bronze after each run',
       x: { labels: ['run again', 'checkpoint deleted'] }, y: { min: 0, max: Math.ceil(r3[1].after / 5000) * 5000, step: 5000 },
       series: [{ kind: 'bar', points: [[0, r3[0].after], [1, r3[1].after]], tone: 'consume' }],
     },
-    { type: 'note', id: 'note', tone: 'consume', text: `Without its checkpoint the stream forgot every file and appended all ${r3[1].added.toLocaleString('en')} rows again: bronze now holds each one twice.` },
   ],
 })
 
@@ -124,7 +123,8 @@ const checkpoint3: SceneModel = ideFrame({
 const cols4 = types(outputOf(s4, COLS))
 const hint = (c: string) => cols4.find(([n]) => n === c)![1]
 const was = (c: string) => cols2.find(([n]) => n === c)![1]
-const hints4: SceneModel = ideFrame({
+const hints4: SceneModel = ideFrame2({
+  model: 'Hint the types you know',
   tree: tree(['globalbank/columns.py', 'globalbank/land.py'], 'globalbank/land.py'),
   editor: { file: 'globalbank/land.py', code: land4, ...view(land4, 'HINTS =', 'query.awaitTermination()', 0),
     highlight: [lineOf(land4, 'HINTS ='), lineOf(land4, 'schemaHints')] },
@@ -155,10 +155,11 @@ const stopped = s5.match(/stream stopped: (\S+)/)![1]
 const newCol = s5.match(/new column: (.+)$/m)![1]
 const r5 = runs(s5)
 const files5 = outputOf(s5, 'bash land.sh 2026-10-15 | wc -l').trim()
-const evolve5: SceneModel = ideFrame({
+const evolve5: SceneModel = ideFrame2({
+  model: 'A new column: stop once, then go on',
   tree: tree(['globalbank/columns.py', 'globalbank/land.py'], 'globalbank/land.py'),
-  editor: { file: 'globalbank/land.py', code: land5, ...view(land5, 'def ingest', "print('new column:'", 0),
-    highlight: [lineOf(land5, "option('mergeSchema'"), ...linesFrom(land5, 'except StreamingQueryException', 'raise SystemExit(1)')] },
+  editor: { file: 'globalbank/land.py', code: land5, show: [[lineOf(land5, ".option('checkpointLocation'"), lineOf(land5, '.trigger(availableNow')], [lineOf(land5, '    try:'), lineOf(land5, 'except StreamingQueryException')], [lineOf(land5, "print('stream stopped:'"), lineOf(land5, 'raise SystemExit(1)')]],
+    highlight: [lineOf(land5, "option('mergeSchema'"), lineOf(land5, 'except StreamingQueryException'), ...linesFrom(land5, "print('stream stopped:'", 'raise SystemExit(1)')] },
   session: s5,
   side: [
     {
@@ -183,7 +184,8 @@ const evolve5: SceneModel = ideFrame({
 
 // §6 — rescued data: "12,50" does not fit DECIMAL(18,2), so it is kept aside, not lost.
 const rows6 = all(outputOf(s6, 'python -m globalbank.rescued'), /^\|(au-\S+)\|\s*(\S+)\|\s*(\S+)\|$/gm).map((m) => [m[1], m[2], m[3]])
-const rescued6Scene: SceneModel = ideFrame({
+const rescued6Scene: SceneModel = ideFrame2({
+  model: 'A bad value is rescued, not lost',
   tree: tree(['globalbank/columns.py', 'globalbank/land.py', 'globalbank/rescued.py'], 'globalbank/rescued.py', ['globalbank/rescued.py']),
   editor: { file: 'globalbank/rescued.py', code: rescued6, highlight: linesFrom(rescued6, ".where(F.col('_rescued_data')", "F.get_json_object") },
   session: s6,
@@ -207,30 +209,28 @@ const rescued6Scene: SceneModel = ideFrame({
 })
 
 // §7 — where each row came from: the file and the time it landed.
-const top7 = all(outputOf(s7, 'python -m globalbank.sources'), /^\|(auths-\S+)\s*\|(\S+ \S+)\|(\d+)\s*\|$/gm).map((m) => [m[1], m[2], m[3]])
-const metadata7: SceneModel = ideFrame({
+const metadata7: SceneModel = ideFrame2({
+  model: 'Every row knows its file',
   tree: tree(['globalbank/columns.py', 'globalbank/land.py', 'globalbank/rescued.py', 'globalbank/sources.py'], 'globalbank/land.py', ['globalbank/sources.py']),
   editor: { file: 'globalbank/land.py', code: land7, ...view(land7, 'def ingest', 'query.awaitTermination()', 0),
     highlight: linesFrom(land7, ".withColumn('source_file'", "F.col('_metadata.file_modification_time')") },
   session: s7,
   side: [
+    { type: 'item', id: 'meta-src', title: '_metadata', sub: 'every file’s path and modification time, from Auto Loader', icon: 'folder', tone: 'source' },
     {
-      type: 'table', id: 'meta', title: 'Two columns bronze adds to every row', tone: 'ingest', columns: ['column', 'from', 'answers'], rows: [
-        { id: 'm-file', cells: ['source_file', '_metadata.file_path', 'which file?'], tone: 'ingest' },
-        { id: 'm-time', cells: ['landed_at', '_metadata.file_modification_time', 'when did it arrive?'], tone: 'ingest' },
+      type: 'table', id: 'meta', title: 'Two columns bronze adds to every row', tone: 'ingest', columns: ['column', 'answers'], rows: [
+        { id: 'm-file', cells: ['source_file', 'which file?'], tone: 'ingest' },
+        { id: 'm-time', cells: ['landed_at', 'when did it land?'], tone: 'ingest' },
       ],
     },
-    {
-      type: 'table', id: 'busiest', title: 'The busiest files of 1 October', tone: 'source', columns: ['file', 'rows'],
-      rows: top7.map(([f, , n]) => ({ id: `b-${f}`, cells: [f, n] })),
-    },
-    { type: 'note', id: 'note', tone: 'ingest', text: 'Bronze’s promise is complete, and complete includes provenance: any row can be traced to the exact file it came from, and that file is still in the volume.' },
   ],
+  edges: [{ from: 'meta-src', to: 'meta', label: 'file_path · file_modification_time' }],
 })
 
 // §8 — bronze, reconciled: the volume and the table agree, line for line.
 const recon = Object.fromEntries(all(outputOf(s8, 'python -m globalbank.reconcile'), /^(.+?)\s{2,}([\d,]+)$/gm).map((m) => [m[1], num(m[2])]))
-const reconcile8Scene: SceneModel = ideFrame({
+const reconcile8Scene: SceneModel = ideFrame2({
+  model: 'Files and rows must agree',
   tree: tree(['globalbank/land.py', 'globalbank/reconcile.py', 'globalbank/sources.py'], 'globalbank/reconcile.py', ['globalbank/reconcile.py']),
   editor: { file: 'globalbank/reconcile.py', code: reconcile8, ...view(reconcile8, 'SOURCE =', undefined, 0), highlight: linesFrom(reconcile8, 'counts = {', '}') },
   session: s8,
@@ -244,8 +244,8 @@ const reconcile8Scene: SceneModel = ideFrame({
     },
     {
       type: 'table', id: 'next', title: 'What bronze keeps, and who fixes it', tone: 'store', columns: ['in bronze', 'fixed in'], rows: [
-        { id: 'n-resend', cells: [`${recon['sent twice']} resends`, 'silver: one row per auth_id (4)'] },
-        { id: 'n-rescued', cells: ['rescued rows', 'silver: quarantined (7)'] },
+        { id: 'n-resend', cells: [`${recon['sent twice']} resends`, 'silver: deduped (4)'] },
+        { id: 'n-rescued', cells: ['rescued rows', 'quarantined (7)'] },
       ],
     },
   ],
