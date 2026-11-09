@@ -440,6 +440,16 @@ reads code aloud. A detour ◆ is ≤ 120 s and returns to the bank.
    Bundles (formerly Databricks Asset Bundles), data profiling (formerly Lakehouse Monitoring).
 7. Layout: the **medallion architecture**, one schema per layer (`landing`, `bronze`, `silver`,
    `gold`) in each catalog, plus `vault` and `ml`.
+8. IDE frame v2 (2026-11-09): every IDE section moves to graphl-flow 0.11's shared frame (1344 ×
+   756, one fit; compact explorer | editor over a 72-column terminal | side pane TITLED with the
+   section's mental model), as python-expense-tracker (its Decision 6) and spark-ecommerce-analytics
+   (its Decision 8) did. The side pane holds one diagram (edges or a plot) and at most one table
+   outside it, no bullets and no notes. A tier label a removed note carried moved into the diagram
+   (10.7 run-as, 11.4 prod, 11.7 CI, 6.8 retention, 12.1 "never prices"). The spine is unchanged: the
+   80-column sessions are wrapped at draw time. Done 2026-11-09: all 75 IDE sections on v2, the 11
+   concept scenes unchanged. Five narrations walked a removed element and were edited, and their
+   wavs removed for Colab to regenerate: `ledger` change-feed, `pipeline` expectations, `serve`
+   dashboard, `schedule` run-as, `ship` targets. Every course is re-recorded: the frame changed.
 
 ## Open decisions (owner)
 

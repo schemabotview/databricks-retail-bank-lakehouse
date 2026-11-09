@@ -39,7 +39,7 @@ const field = (out: string, name: string) => out.match(new RegExp(`^\\s*${name}:
 const out1 = outputOf(s1, 'python -m globalbank.drift')
 const drift = all(out1, /^ {2}(\w+)\s+repo: (.*?)\s+workspace: (.*)$/gm).map((m) => ({ key: m[1], repo: m[2], live: m[3] }))
 const drift1Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'The repo and the workspace drift apart',
   tree: tree(['globalbank/drift.py', 'resources/nightly.yml'], 'globalbank/drift.py', ['globalbank/drift.py']),
   editor: { file: 'globalbank/drift.py', code: drift1, highlight: linesFrom(drift1, 'edited = w.jobs.get(job_id(w)).settings', 'w.jobs.reset(job_id(w), new_settings=edited)') },
   session: s1,
@@ -53,7 +53,7 @@ const drift1Scene: SceneModel = ideFrame2({
     },
     {
       type: 'table', id: 'diff', title: `Drift: ${drift.length} settings differ`, tone: 'consume', columns: ['setting', 'repo', 'workspace'],
-      rows: drift.map((d) => ({ id: `d-${d.key}`, cells: [d.key, d.repo, d.live], tone: 'consume' as const })),
+      rows: drift.map((d) => ({ id: `d-${d.key}`, cells: [d.key.replace('max_concurrent_runs', 'max runs'), d.repo, d.live], tone: 'consume' as const })),
     },
   ],
   edges: [
@@ -65,7 +65,7 @@ const drift1Scene: SceneModel = ideFrame2({
 // §2 — a bundle: databricks.yml, and the resources it includes.
 const out2 = outputOf(s2, `${B} validate`)
 const bundle2Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A bundle: config, resources, code',
   tree: tree(['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml', 'resources/nightly.yml', 'dashboards/'], 'databricks.yml', ['.gitignore', 'databricks.yml', 'resources/globalbank_pipeline.yml']),
   editor: { file: 'databricks.yml', code: bundle2, lang: 'text', highlight: linesFrom(bundle2, 'bundle:', '  - resources/*.yml') },
   session: s2,
@@ -117,10 +117,8 @@ const resources3: SceneModel = {
 }
 
 // §4 — targets: one bundle, dev and prod.
-const dev4 = outputOf(s4, `${B} validate -t dev | sed -n 1,5p`)
-const prod4 = outputOf(s4, `${B} validate -t prod | sed -n 1,5p`)
 const targets4: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'One bundle, a target per environment',
   tree: tree(['databricks.yml', 'resources/'], 'databricks.yml'),
   editor: { file: 'databricks.yml', code: bundle4, lang: 'text', show: [[lineOf(bundle4, 'variables:'), lineOf(bundle4, 'variables: {catalog: globalbank_prod}')]], highlight: linesFrom(bundle4, 'targets:', 'variables: {catalog: globalbank_prod}') },
   session: s4,
@@ -138,10 +136,9 @@ const targets4: SceneModel = ideFrame2({
     },
     {
       type: 'table', id: 'diff', title: 'What each target changes', tone: 'ingest', columns: ['', 'dev', 'prod'], rows: [
-        { id: 'x-path', cells: ['folder', field(dev4, 'Path').replace(/^.*\.bundle/, '…/.bundle'), field(prod4, 'Path').replace(/^.*\.bundle/, '…/.bundle')] },
         { id: 'x-mode', cells: ['mode', 'development', 'production'] },
-        { id: 'x-name', cells: ['names', 'dev_ana_globalbank_…', 'globalbank_…'] },
-        { id: 'x-cat', cells: ['pipeline catalog', 'globalbank_dev', 'globalbank_prod'] },
+        { id: 'x-name', cells: ['names', 'dev_ana_…', 'globalbank_…'] },
+        { id: 'x-cat', cells: ['catalog', '…_dev', '…_prod'] },
         { id: 'x-sched', cells: ['triggers', 'paused', 'live'] },
       ],
     },
@@ -157,7 +154,7 @@ const deploy5 = outputOf(s5, `${B} deploy`).split('\n').filter(Boolean).map((l) 
 const run5 = outputOf(s5, `${B} run globalbank_nightly 2>&1 | grep TERMINATED`)
 const state5 = run5.match(/"([^"]+)" (\w+)(?: (\w+))?/)
 const deployRun5: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Deploy the bundle, then run it',
   tree: tree(['databricks.yml', 'resources/nightly.yml', 'resources/globalbank_pipeline.yml', 'resources/dashboard.yml'], 'resources/nightly.yml'),
   editor: { file: 'resources/nightly.yml', code: nightly5, lang: 'text', ...view(nightly5, '      tasks:', undefined, 0), highlight: linesFrom(nightly5, 'pipeline_id: ${resources.pipelines.globalbank_pipeline.id}') },
   session: s5,
@@ -181,7 +178,7 @@ const unit6 = outputOf(s6, '.venv-test/bin/python -m pytest -q tests/test_transf
 const ws6 = outputOf(s6, 'python -m pytest -q tests/test_workspace.py 2>&1 | tail -1')
 const passed = (out: string) => out.match(/(\d+) passed/)?.[1] ?? '0'
 const tests6: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Many fast unit tests, a few real ones',
   tree: tree(['tests/test_transforms.py', 'tests/test_workspace.py', 'globalbank/transforms.py', 'requirements.txt'], 'tests/test_transforms.py', ['tests/test_transforms.py', 'tests/test_workspace.py', 'globalbank/transforms.py']),
   editor: { file: 'tests/test_transforms.py', code: test6, ...view(test6, '@pytest.fixture', undefined, 0), highlight: linesFrom(test6, 'def test_velocity_counts_ten_minutes', '[1, 2, 3, 4, 5, 6, 1]') },
   session: s6,
@@ -194,10 +191,10 @@ const tests6: SceneModel = ideFrame2({
       ],
     },
     {
-      type: 'table', id: 'what', title: 'What each test checks', tone: 'ingest', columns: ['test', 'runs on', 'checks'], rows: [
-        { id: 'w-vel', cells: ['velocity', 'local PySpark', '1, 2, … 6, then 1 again'] },
-        { id: 'w-seq', cells: ['latest change', 'local PySpark', 'the higher sequence wins'] },
-        { id: 'w-ring', cells: ['the October ring', 'the workspace', 'six cards over 5 in 10 min'], tone: 'consume' },
+      type: 'table', id: 'what', title: 'What each test checks', tone: 'ingest', columns: ['test', 'on', 'checks'], rows: [
+        { id: 'w-vel', cells: ['velocity', 'local', '1, 2, … 6, 1'] },
+        { id: 'w-seq', cells: ['latest', 'local', 'higher seq wins'] },
+        { id: 'w-ring', cells: ['the ring', 'workspace', '6 cards > 5'], tone: 'consume' },
       ],
     },
   ],
@@ -211,7 +208,7 @@ const tests6: SceneModel = ideFrame2({
 // secret needs the account console, which Free Edition does not have).
 const out7 = outputOf(s7, `${B} validate -t prod | tail -1`)
 const ci7: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A change: PR, tests, merge, deploy',
   tree: tree(['.github/workflows/deploy.yml', 'databricks.yml', 'tests/'], '.github/workflows/deploy.yml', ['.github/workflows/deploy.yml']),
   editor: { file: '.github/workflows/deploy.yml', code: workflow7, lang: 'text', ...view(workflow7, 'jobs:', undefined, 0), highlight: linesFrom(workflow7, '  deploy:', 'run: databricks bundle deploy -t prod') },
   session: s7,
@@ -221,7 +218,7 @@ const ci7: SceneModel = ideFrame2({
         { type: 'item', id: 'c-pr', title: 'a pull request', sub: 'a change to the code or the YAML', icon: 'code' },
         { type: 'item', id: 'c-test', title: 'test', sub: 'pytest on local PySpark, on every PR', icon: 'check' },
         { type: 'item', id: 'c-merge', title: 'merge to main', sub: 'a reviewer approves', icon: 'users' },
-        { type: 'item', id: 'c-deploy', title: 'bundle deploy -t prod', sub: `as a service principal · here: ${out7}`, icon: 'databricks', tone: 'consume' },
+        { type: 'item', id: 'c-deploy', title: 'bundle deploy -t prod (documented)', sub: `as a service principal · here: ${out7}`, icon: 'databricks', tone: 'consume' },
       ],
     },
   ],

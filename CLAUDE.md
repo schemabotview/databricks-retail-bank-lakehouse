@@ -13,8 +13,8 @@ scheduled, tested lakehouse, **run on a real Databricks Free Edition workspace**
 planted problems, the run tiers, the pinned versions, the packaging (one video) and the open
 decisions. Author from it; change it first, never drift from it.
 
-Engine `@graphlearning/graphl-flow` (^0.3.0), shell `@graphlearning/shell` (^1.0.2), both published
-and pinned. Sister repos:
+Engine `@graphlearning/graphl-flow` 0.11.0, shell `@graphlearning/shell` 1.1.0, both published and
+pinned exactly (IDE frame v2, COURSE-PLAN Decision 8); no `overrides`. Sister repos:
 
 - **`spark-ecommerce-analytics`** — the prerequisite (Spark and open-source Delta, local). Its infra
   (IDE template, `spine.py`, checks, registry, shots, the seeded generator) is the one to port. Port
@@ -35,6 +35,12 @@ all 12 courses are recorded at 4K (`scripts/out/<course>.mp4`, 1h 58m total) —
 -18.4 → -14 LUFS for YouTube). Descriptions and the cover are built (`npm run gen:desc`,
 `npm run thumb:film`). Nothing is uploaded. The owner reviews at the end (2026-10-26: "do course
 by course till end").
+
+**2026-11-09: ported to IDE frame v2** (COURSE-PLAN Decision 8). All 75 IDE sections are on v2; the
+11 concept scenes are unchanged. Five narrations changed (ledger change-feed, pipeline expectations,
+serve dashboard, schedule run-as, ship targets): their wavs are removed, so check-content fails on
+those five until Colab regenerates them. Then every course is re-recorded: the recordings and the
+film above are v1. Nothing was replayed: the spine is unchanged.
 
 **The owner's workspace holds other catalogs** (personal and training ones). Never list catalogs,
 groups or users unfiltered on screen: filter to `globalbank*`, or print our own objects only.
@@ -164,8 +170,21 @@ workspace adds:
 
 ## Frames
 
-`spark-ecommerce-analytics`' IDE template, unchanged: explorer | editor (80 × 23) over terminal (13)
-| fixed side pane. Every IDE side pane carries a diagram. No edges between panes. A detour (◆) that
+**IDE frame v2** (`src/scenes/frame.ts` `ideFrame2`, ported from python-expense-tracker via
+spark-ecommerce-analytics): one 1344 × 756 grid, one fit. Compact explorer 175 (no notes; a name too
+long for its level is cut in the middle, its extension kept) | editor over a 72-column terminal,
+sharing 26 rows (the terminal takes its transcript's rows, at most 19 here: MIN_EDITOR is 7, because
+a 75-column `show()` grid wraps every row in two) | side pane 434, TITLED with the section's mental
+model (`model`). The side pane holds ONE diagram (edges or a plot) and at most one table outside it;
+no bullets, no notes (check-content), filled ≥ 1/2 (check-render). A tier label (documented, run
+local, illustrative) goes INTO the diagram, never a note. A plot there is `compact` with
+`w: SIDE_W - 34`; a table fits ~36 monospace characters a row (strip the schema from a table name,
+cut a path to `…`). An edge label widens the gap of the body it crosses: put a labelled pair in its
+own bare group, or the pane grows (6.3). `ideFrame2` windows the editor around the highlighted lines
+and counts rows as `pre-wrap` wraps (at spaces); a hand-picked `show` is used only when that span
+does not fit, and THROWS (naming the scene) when it does not: give it fewer, tighter ranges.
+`fold.ts` `view()` is v1's and is no longer a safe `show`; the course files' `FILL` is empty (the
+pane spreads its blocks itself). Every IDE side pane carries a diagram. No edges between panes. A detour (◆) that
 cannot fit the side pane at ≥ 24px is a full concept scene with the real output inside it.
 **The workspace UI is never screenshotted**: pipeline graphs, lineage, query profiles, job runs and
 dashboards are drawn from the API's own numbers (event log, system tables, run output). graphl-flow's

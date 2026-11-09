@@ -1,7 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
 import { linesFrom } from '../ide'
-import { ideFrame2 } from '../frame'
+import { SIDE_W, ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { appMap } from '../map'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
@@ -38,28 +38,29 @@ const rows1 = all(out1, /^\s+(\S+)\s+([\d.]+)$/gm).map((m) => ({ product: m[1], 
 const top1 = Math.ceil(Math.max(...rows1.map((r) => r.dbus)) / 2) * 2 || 2
 // What each billing product is (documented, docs.databricks.com, checked 2026-10-28).
 const MEANS: Record<string, string> = {
-  INTERACTIVE: 'serverless compute: every script',
-  DEFAULT_STORAGE: 'the managed tables’ files',
-  PREDICTIVE_OPTIMIZATION: 'automatic table maintenance',
+  INTERACTIVE: 'serverless: every script',
+  DEFAULT_STORAGE: 'managed tables’ files',
+  PREDICTIVE_OPTIMIZATION: 'table maintenance',
   GENIE: 'AI/BI Genie',
-  DLT: 'Lakeflow pipelines (Course 7)',
-  SQL: 'the SQL warehouse (Course 8)',
-  JOBS: 'Lakeflow Jobs (Course 10)',
+  DLT: 'pipelines (Course 7)',
+  SQL: 'warehouse (Course 8)',
+  JOBS: 'Jobs (Course 10)',
 }
+const LABEL: Record<string, string> = { PREDICTIVE_OPTIMIZATION: 'pred. opt.', DEFAULT_STORAGE: 'storage' }
 const cost1Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'The bill, in DBUs by product',
   tree: tree(['globalbank/cost.py'], 'globalbank/cost.py', ['globalbank/cost.py']),
   editor: { file: 'globalbank/cost.py', code: cost1, highlight: linesFrom(cost1, 'SELECT billing_origin_product AS product', 'GROUP BY ALL ORDER BY dbus DESC') },
   session: s1,
   side: [
     {
-      type: 'plot', id: 'dbus', compact: true, title: `${head1[1]} DBUs since 27 October, by product`,
-      x: { labels: rows1.map((r) => ({ PREDICTIVE_OPTIMIZATION: 'pred. opt.', DEFAULT_STORAGE: 'storage' } as Record<string, string>)[r.product] ?? r.product.toLowerCase()) }, y: { min: 0, max: top1, step: top1 / 4 },
+      type: 'plot', id: 'dbus', compact: true, w: SIDE_W - 34, title: `${head1[1]} DBUs since 27 October, by product`,
+      x: { labels: rows1.map((r) => LABEL[r.product] ?? r.product.toLowerCase()) }, y: { min: 0, max: top1, step: top1 / 4 },
       series: [{ kind: 'bar', points: rows1.map((r, i) => [i, r.dbus] as [number, number]), tone: 'consume' }],
     },
     {
-      type: 'table', id: 'what', title: 'What each line of the bill is', tone: 'consume', columns: ['product', 'what it is'],
-      rows: rows1.map((r) => ({ id: `w-${r.product}`, cells: [r.product, MEANS[r.product] ?? 'see the billing docs'] })),
+      type: 'table', id: 'what', title: 'Each line of the bill (DBUs, never prices)', tone: 'consume', columns: ['product', 'is'],
+      rows: rows1.map((r) => ({ id: `w-${r.product}`, cells: [LABEL[r.product] ?? r.product.toLowerCase(), MEANS[r.product] ?? 'see the billing docs'] })),
     },
   ],
 })
@@ -71,13 +72,13 @@ const files2 = s2.split(/^\$ /m).slice(1).filter((b) => b.startsWith('python -m 
 })
 const opt2 = outputOf(s2, `python -m globalbank.optimize ${T}`).match(/(\d+) files removed, (\d+) added/)!
 const small2: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Many small files, compacted',
   tree: tree(['globalbank/files.py', 'globalbank/optimize.py'], 'globalbank/optimize.py', ['globalbank/files.py', 'globalbank/optimize.py']),
   editor: { file: 'globalbank/optimize.py', code: optimize2, highlight: [linesFrom(optimize2, "m = get_spark().sql(f'OPTIMIZE {table}')")[0]] },
   session: s2,
   side: [
     {
-      type: 'plot', id: 'files', compact: true, title: 'bronze.card_auths: data files',
+      type: 'plot', id: 'files', compact: true, w: SIDE_W - 34, title: 'bronze.card_auths: data files',
       x: { labels: ['7 daily runs', 'after OPTIMIZE'] }, y: { min: 0, max: Math.ceil(files2[0].files / 5) * 5 || 5, step: (Math.ceil(files2[0].files / 5) * 5 || 5) / 5 },
       series: [{ kind: 'bar', points: [[0, files2[0].files], [1, files2[1].files]], tone: 'store' }],
     },
@@ -94,13 +95,13 @@ const small2: SceneModel = ideFrame2({
 const out3 = outputOf(s3, 'python -m globalbank.cluster')
 const read3 = all(out3, /^silver\.auths_(\w+)\s+files read\s+(\d+), skipped\s+(\d+)$/gm).map((m) => ({ t: m[1], read: Number(m[2]), skipped: Number(m[3]) }))
 const cluster3Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Clustered files let a query skip',
   tree: tree(['globalbank/cluster.py', 'globalbank/optimize.py'], 'globalbank/cluster.py', ['globalbank/cluster.py']),
   editor: { file: 'globalbank/cluster.py', code: cluster3, ...view(cluster3, 'spark = get_spark()'), highlight: linesFrom(cluster3, "for name, layout in (('by_arrival', ''), ('clustered',", "'CLUSTER BY (merchant_id, auth_ts)')):") },
   session: s3,
   side: [
     {
-      type: 'plot', id: 'read', compact: true, title: 'One merchant, one day: files read and skipped',
+      type: 'plot', id: 'read', compact: true, w: SIDE_W - 34, title: 'One merchant, one day: files read and skipped',
       x: { labels: read3.map((r) => r.t.replace('_', ' ')) }, y: { min: 0, max: Math.max(5, ...read3.map((r) => r.read + r.skipped)), step: 1 },
       series: [
         { kind: 'bar', label: 'read', points: read3.map((r, i) => [i, r.read] as [number, number]), tone: 'consume' },
@@ -109,14 +110,14 @@ const cluster3Scene: SceneModel = ideFrame2({
     },
     {
       type: 'group', id: 'how', title: 'CLUSTER BY (merchant_id, auth_ts)', icon: 'layers', tone: 'store', ...FILL, children: [
-        { type: 'item', id: 'h-skew', title: 'M0001: one supermarket, ~20% of rows', sub: 'by arrival, mixed in with every other merchant', icon: 'building' },
-        { type: 'item', id: 'h-cluster', title: 'clustered: rows with near keys together', sub: 'each file covers a narrow range', icon: 'layers' },
-        { type: 'item', id: 'h-skip', title: 'the query skips the other files', sub: 'by their min / max statistics', icon: 'filter' },
+        { type: 'item', id: 'h-skew', title: 'M0001: ~20% of rows', sub: 'by arrival: in every file', icon: 'building' },
+        { type: 'item', id: 'h-cluster', title: 'OPTIMIZE: near keys together', sub: 'a file covers a narrow range', icon: 'layers' },
+        { type: 'item', id: 'h-skip', title: 'the query skips the rest', sub: 'by min / max statistics', icon: 'filter' },
       ],
     },
   ],
   edges: [
-    { from: 'h-skew', to: 'h-cluster', label: 'OPTIMIZE' },
+    { from: 'h-skew', to: 'h-cluster' },
     { from: 'h-cluster', to: 'h-skip' },
   ],
 })
@@ -127,27 +128,28 @@ const po4 = out4.split('\n').find((l) => l.startsWith('Predictive')) ?? 'Predict
 const ops4 = all(out4, /^\s{2}(\w+)\s+(\d+)$/gm).map((m) => ({ op: m[1], n: m[2] }))
 const hist4 = (out4.match(/by operation: (.*)$/m)?.[1] ?? '').split(', ').filter(Boolean)
 const predictive4Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'The platform maintains its own tables',
   tree: tree(['globalbank/cluster.py', 'globalbank/predictive.py'], 'globalbank/predictive.py', ['globalbank/predictive.py']),
   editor: { file: 'globalbank/predictive.py', code: predictive4, highlight: linesFrom(predictive4, 'FROM system.storage.predictive_optimization_operations_history', "WHERE catalog_name = 'globalbank_dev'") },
   session: s4,
   side: [
     {
       type: 'table', id: 'state', title: po4.split(':')[0], tone: 'infra', columns: ['setting', 'value'], rows: [
-        { id: 'p-on', cells: ['silver schema', po4.split(': ').slice(1).join(': ')], tone: 'infra' },
+        { id: 'p-on', cells: ['silver schema', po4.split(': ').slice(1).join(': ').toLowerCase()], tone: 'infra' },
         ...ops4.map((o) => ({ id: `p-${o.op}`, cells: [o.op, o.n] })),
-        ...hist4.map((h, i) => ({ id: `h-${i}`, cells: ['auths_clustered history', h] })),
+        ...hist4.map((h, i) => ({ id: `h-${i}`, cells: ['auths_clustered', h.replace('CREATE OR REPLACE TABLE AS SELECT', 'CTAS')] })),
       ],
     },
     {
-      type: 'table', id: 'who', title: 'Who runs what (documented)', tone: 'infra', columns: ['task', 'by hand (12.2, 12.3)', 'predictive optimization'], rows: [
-        { id: 'w-opt', cells: ['compact small files', 'OPTIMIZE', 'runs it when it pays'] },
-        { id: 'w-cl', cells: ['cluster', 'CLUSTER BY + OPTIMIZE', 'clusters as it compacts'] },
-        { id: 'w-vac', cells: ['remove old files', 'VACUUM', 'runs it, after retention'] },
-        { id: 'w-stats', cells: ['statistics', 'ANALYZE', 'keeps them current'] },
+      type: 'table', id: 'who', title: 'Who runs what (documented)', tone: 'infra', columns: ['task', 'by hand', 'automatic'], rows: [
+        { id: 'w-opt', cells: ['compact', 'OPTIMIZE', 'when it pays'] },
+        { id: 'w-cl', cells: ['cluster', 'CLUSTER BY', 'as it compacts'] },
+        { id: 'w-vac', cells: ['old files', 'VACUUM', 'after retention'] },
+        { id: 'w-stats', cells: ['statistics', 'ANALYZE', 'kept current'] },
       ],
     },
   ],
+  edges: [{ from: 'state', to: 'who', label: 'enabled: it takes over, once tables are old enough' }],
 })
 
 // §5 — the finished bank: the app map, every part lit, with its real output.

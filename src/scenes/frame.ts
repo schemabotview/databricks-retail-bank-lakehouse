@@ -59,8 +59,22 @@ export function terminal(session: string): string {
   return out.join('\n')
 }
 
+/** Rows one editor line takes. The editor wraps as CSS `pre-wrap` does, at a space when there is
+ *  one (a hard cut only inside a longer word), so a line of words can take more rows than its
+ *  length / EDITOR_WRAP: a 96-column path (databricks 11.4) took three, and the frame grew a row. */
+export function wrappedRows(line: string, width = EDITOR_WRAP): number {
+  let rows = 1, rest = line
+  while (rest.length > width) {
+    const space = rest.lastIndexOf(' ', width) // a space may hang at the end of a row
+    const cut = space > 0 && rest.slice(0, space).trim() ? space + 1 : width
+    rest = rest.slice(cut)
+    rows++
+  }
+  return rows
+}
+
 const rowsOf = (lines: string[], a: number, b: number) =>
-  lines.slice(a - 1, b).reduce((n, l) => n + Math.max(1, Math.ceil(l.length / EDITOR_WRAP)), 0)
+  lines.slice(a - 1, b).reduce((n, l) => n + wrappedRows(l), 0)
 
 /** A window of the file around lines first..last that fits `room` editor rows, folds included. */
 export function windowFor(code: string, first: number, last: number, room: number): [number, number][] | undefined {
@@ -140,8 +154,7 @@ const bare = (entries: TreeEntry[], depth = 0): TreeEntry[] =>
     return children ? { ...named, children: bare(children, depth + 1) } : named
   })
 
-/* PORTING */ export function ideFrame2(f: Frame): SceneModel { try { return build(f) } catch (e) { if (f.model === 'TODO') return { nodes: [] }; throw e } }
-function build({ model, tree, editor, session, side, edges = [], project = 'globalbank' }: Frame): SceneModel {
+export function ideFrame2({ model, tree, editor, session, side, edges = [], project = 'globalbank' }: Frame): SceneModel {
   const term = terminal(session)
   const rows = term.split('\n').length
   if (rows > ROWS - MIN_EDITOR) throw new Error(`frame.ts "${model}": the transcript is ${rows} rows, a terminal shows at most ${ROWS - MIN_EDITOR}`)
