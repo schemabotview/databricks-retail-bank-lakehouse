@@ -1,7 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
 import { lineOf, linesFrom } from '../ide'
-import { ideFrame2 } from '../frame'
+import { SIDE_W, ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import ring1 from '../../../spine/detect/01-card-testing/project/globalbank/ring.py?raw'
@@ -49,18 +49,18 @@ const one1 = out1.match(/^(K\d+): (.*)$/m)!
 const times1 = one1[2].split(' ').map((t) => { const [hm, a] = t.split('/'); const [h, m] = hm.split(':').map(Number); return { at: h * 60 + m, amount: Number(a) } })
 const t0 = times1[0].at
 const ring1Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A card-testing ring: tiny, fast, at night',
   tree: tree(['globalbank/ring.py'], 'globalbank/ring.py', ['globalbank/ring.py']),
   editor: { file: 'globalbank/ring.py', code: ring1, ...view(ring1, 'spark = get_spark()'), highlight: linesFrom(ring1, "WHERE to_date(auth_ts) = '{day}' AND hour(auth_ts) < 5", 'GROUP BY card_id HAVING count(*) > 3') },
   session: s1,
   side: [
     {
-      type: 'plot', id: 'one', compact: true, title: `${one1[1]}: each authorization, minutes after the first, EUR`,
+      type: 'plot', id: 'one', compact: true, w: SIDE_W - 34, title: `${one1[1]}: each authorization, minutes after the first, EUR`,
       x: { labels: times1.map((t) => String(t.at - t0)) }, y: { min: 0, max: 2.5, step: 0.5 },
       series: [{ kind: 'bar', points: times1.map((t, i) => [i, t.amount] as [number, number]), tone: 'consume' }],
     },
     {
-      type: 'table', id: 'cards', title: `${cards1.length} cards, before 05:00`, tone: 'consume', columns: ['card', 'auths', 'minutes', 'EUR', 'declined'],
+      type: 'table', id: 'cards', title: `${cards1.length} cards, before 05:00`, tone: 'consume', columns: ['card', 'auths', 'min', 'EUR', 'decl.'],
       rows: cards1.map((c) => ({ id: `c-${c.card}`, cells: [c.card, String(c.auths), String(c.mins), c.eur, String(c.declined)], tone: 'consume' as const })),
     },
   ],
@@ -69,7 +69,7 @@ const ring1Scene: SceneModel = ideFrame2({
 // §2 — rules first: more than 5 authorizations in 10 minutes, checked against the chargebacks.
 const out2 = grid(outputOf(s2, 'python -m globalbank.warehouse sql/fraud/velocity.sql'))
 const rules2Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A rule counts a window per card',
   tree: tree(['sql/fraud/velocity.sql', 'globalbank/ring.py', 'globalbank/warehouse.py'], 'sql/fraud/velocity.sql', ['sql/fraud/velocity.sql']),
   editor: { file: 'sql/fraud/velocity.sql', code: rules2, lang: 'sql', highlight: linesFrom(rules2, 'count(*) OVER (PARTITION BY card_id ORDER BY auth_ts', 'AND CURRENT ROW) AS auths_10m') },
   session: s2,
@@ -95,14 +95,14 @@ const rules2Scene: SceneModel = ideFrame2({
 // §3 — a streaming rule: windows and a watermark over bronze.
 const nights3 = grid(outputOf(s3, 'python -m globalbank.stream'))
 const stream3Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'The rule as a stream: window, watermark',
   tree: tree(['globalbank/stream.py', 'globalbank/ring.py'], 'globalbank/stream.py', ['globalbank/stream.py']),
   editor: { file: 'globalbank/stream.py', code: stream3, ...view(stream3, 'spark = get_spark()'), highlight: linesFrom(stream3, ".withWatermark('auth_ts', '30 minutes')", ".where('auths > 5'))") },
   session: s3,
   side: [
     {
-      type: 'table', id: 'flags', title: 'gold.fraud_flags, a night to a row', tone: 'consume', columns: nights3.columns,
-      rows: nights3.rows.map((r) => ({ id: `n-${r[0].replace(/\W+/g, '-')}`, cells: r, tone: 'consume' as const })),
+      type: 'table', id: 'flags', title: 'gold.fraud_flags, a night to a row', tone: 'consume', columns: ['night', 'windows', 'cards', 'most in one'],
+      rows: nights3.rows.map((r) => ({ id: `n-${r[0].replace(/\W+/g, '-')}`, cells: [r[0], r[1], r[2], r[5]], tone: 'consume' as const })),
     },
     {
       type: 'group', id: 'wm', title: 'Window and watermark', icon: 'stream', tone: 'ingest', ...FILL, children: [
@@ -121,27 +121,24 @@ const stream3Scene: SceneModel = ideFrame2({
 // §4 — features in Unity Catalog.
 const out4 = outputOf(s4, 'python -m globalbank.features')
 const rows4 = out4.match(/: ([\d,]+) rows/)![1]
-const days4 = all(out4, /^\|(\S+)\|\s*(\d+)\|\s*(\d+)\|\s*([\d.]+)\|$/gm).map((m) => m.slice(1, 5))
 const features4Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Features: what the model sees',
   tree: tree(['globalbank/features.py', 'globalbank/stream.py'], 'globalbank/features.py', ['globalbank/features.py']),
   editor: { file: 'globalbank/features.py', code: features4, highlight: linesFrom(features4, 'count(*) OVER (PARTITION BY card_id ORDER BY auth_ts', 'AS INT) AS fraud') },
   session: s4,
   side: [
+    { type: 'item', id: 'silver', title: 'silver.card_transactions', sub: 'one SQL statement over silver', icon: 'layers', tone: 'ingest' },
     {
-      type: 'table', id: 'features', title: 'ml.card_features: one row per authorization', tone: 'store', columns: ['feature', 'what the model sees'], rows: [
-        { id: 'x-vel', cells: ['auths_10m', 'the card’s authorizations in 10 minutes'], tone: 'store' },
+      type: 'table', id: 'features', title: `ml.card_features: ${rows4} rows`, tone: 'store', columns: ['feature', 'means'], rows: [
+        { id: 'x-vel', cells: ['auths_10m', 'its card’s auths, 10 min'], tone: 'store' },
         { id: 'x-on', cells: ['online', 'card not present'] },
-        { id: 'x-tiny', cells: ['tiny_amount', 'under 2 EUR: a test charge'] },
+        { id: 'x-tiny', cells: ['tiny_amount', 'under 2 EUR'] },
         { id: 'x-night', cells: ['night', 'before 05:00'] },
-        { id: 'x-fraud', cells: ['fraud', 'the label: a chargeback (September only)'], tone: 'consume' },
+        { id: 'x-fraud', cells: ['fraud', 'the label: chargeback'], tone: 'consume' },
       ],
     },
-    {
-      type: 'table', id: 'days', title: `${rows4} rows, by day`, tone: 'store', columns: ['day', 'auths', 'fraud', 'avg auths_10m'],
-      rows: days4.map((d) => ({ id: `d-${d[0]}`, cells: d, tone: Number(d[2]) > 0 ? 'consume' as const : undefined })),
-    },
   ],
+  edges: [{ from: 'silver', to: 'features', label: 'features.py' }],
 })
 
 // §5 — MLflow tracking: train on 12 September, test on 26 September.
@@ -150,7 +147,7 @@ const sizes5 = out5.match(/trained on ([\d,]+) rows \((\d+) fraud\), tested on (
 const metric5 = (k: string) => out5.match(new RegExp(`^\\s+${k}\\s+([\\d.]+)$`, 'm'))![1]
 const weights5 = all(out5.match(/weights\s+(.*)$/m)![1], /(\w+) ([+-][\d.]+)/g).map((m) => ({ x: m[1], w: Number(m[2]) }))
 const train5Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'One run: params, metrics, a model',
   tree: tree(['requirements.txt', 'globalbank/features.py', 'globalbank/train.py'], 'globalbank/train.py', ['globalbank/train.py']),
   editor: { file: 'globalbank/train.py', code: train5, show: [[1, 2], [lineOf(train5, "mlflow.set_experiment"), lineOf(train5, 'registered_model_name=MODEL)')]], highlight: linesFrom(train5, "with mlflow.start_run(run_name='logreg-sep12') as run:", 'mlflow.log_metrics(metrics)') },
   session: s5,
@@ -163,7 +160,7 @@ const train5Scene: SceneModel = ideFrame2({
       ],
     },
     {
-      type: 'plot', id: 'weights', compact: true, title: 'What it learned: a weight per feature',
+      type: 'plot', id: 'weights', compact: true, w: SIDE_W - 34, title: 'What it learned: a weight per feature',
       x: { labels: weights5.map((w) => w.x) }, y: { min: Math.min(0, Math.floor(Math.min(...weights5.map((w) => w.w)))), max: Math.ceil(Math.max(...weights5.map((w) => w.w))), step: 1 },
       series: [{ kind: 'bar', points: weights5.map((w, i) => [i, w.w] as [number, number]), tone: 'store' }],
     },
@@ -180,7 +177,7 @@ const versions6 = (b: string) => all(b, /^\s+version (\d+)\s+(\w+)\s*(\w*)$/gm).
 const before6 = versions6(blocks6[0])
 const after6 = versions6(blocks6[1])
 const registry6Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Scoring loads an alias, not a version',
   tree: tree(['globalbank/registry.py', 'globalbank/train.py'], 'globalbank/registry.py', ['globalbank/registry.py']),
   editor: { file: 'globalbank/registry.py', code: registry6, highlight: [lineOf(registry6, "client.set_registered_model_alias(MODEL, 'champion', sys.argv[2])")] },
   session: s6,
@@ -208,7 +205,7 @@ const out7 = outputOf(s7, 'python -m globalbank.score 2026-10-22 0.9')
 const head7 = out7.split('\n')[0]
 const flagged7 = all(out7, /^\s+(K\d+)\s+(\d+) auths\s+first (\d\d:\d\d)\s+score ([\d.]+)$/gm).map((m) => m.slice(1, 5))
 const score7Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Score with the champion; flag the top',
   tree: tree(['globalbank/registry.py', 'globalbank/score.py', 'globalbank/train.py'], 'globalbank/score.py', ['globalbank/score.py']),
   editor: { file: 'globalbank/score.py', code: score7, ...view(score7, 'day, threshold = '), highlight: linesFrom(score7, "CHAMPION = 'models:/globalbank_dev.ml.card_fraud@champion'", "batch['score'] = model.predict_proba(batch[X])[:, 1]") },
   session: s7,
@@ -236,13 +233,13 @@ const out8 = outputOf(s8, 'python -m globalbank.tradeoff')
 const head8 = out8.split('\n')[0]
 const rows8 = all(out8, /^\s*([\d.]+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)$/gm).map((m) => m.slice(1, 7))
 const tradeoff8Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A threshold trades precision for recall',
   tree: tree(['globalbank/score.py', 'globalbank/tradeoff.py'], 'globalbank/tradeoff.py', ['globalbank/tradeoff.py']),
   editor: { file: 'globalbank/tradeoff.py', code: tradeoff8, ...view(tradeoff8, 'spark = get_spark()'), highlight: linesFrom(tradeoff8, 'for t in (0.5, 0.7, 0.9, 0.97, 0.99):', "f'  {len(hit) / len(fraud):>6.2f}  {hit.amount.sum():>16}')") },
   session: s8,
   side: [
     {
-      type: 'plot', id: 'curve', compact: true, title: 'Precision and recall by threshold, 26 September (axis from 0.8)',
+      type: 'plot', id: 'curve', compact: true, w: SIDE_W - 34, title: 'Precision and recall by threshold, 26 September (axis from 0.8)',
       x: { labels: rows8.map((r) => r[0]) }, y: { min: 0.8, max: 1, step: 0.05 },
       series: [
         { kind: 'line', label: 'precision', points: rows8.map((r, i) => [i, Number(r[3])] as [number, number]), tone: 'store' },
@@ -250,7 +247,7 @@ const tradeoff8Scene: SceneModel = ideFrame2({
       ],
     },
     {
-      type: 'table', id: 'queue', title: head8, tone: 'consume', columns: ['threshold', 'queue', 'caught', 'EUR caught'],
+      type: 'table', id: 'queue', title: head8, tone: 'consume', columns: ['threshold', 'queue', 'caught', 'EUR'],
       rows: rows8.map((r) => ({ id: `t-${r[0]}`, cells: [r[0], r[1], r[2], r[5]] })),
     },
   ],

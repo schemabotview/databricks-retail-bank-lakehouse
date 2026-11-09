@@ -125,9 +125,20 @@ export interface Frame {
   project?: string
 }
 
-/** The compact explorer (175px) has no room for v1's asides: a note is dropped, the state kept. */
-const bare = (entries: TreeEntry[]): TreeEntry[] =>
-  entries.map(({ note: _note, children, ...e }) => (children ? { ...e, children: bare(children) } : e))
+/** The compact explorer (175px) has no room for v1's asides: a note is dropped, the state kept. A
+ *  name too long for its level is cut in the middle, its extension kept (the editor's tab has the
+ *  whole path): ~19 characters fit at the top level, about one and a half fewer a level down. */
+const fit = (name: string, depth: number) => {
+  const room = 19 - Math.ceil(depth * 1.5)
+  if (name.length <= room) return name
+  const dot = name.lastIndexOf('.'), ext = dot > 0 ? name.slice(dot) : ''
+  return name.slice(0, room - ext.length - 1) + '…' + ext
+}
+const bare = (entries: TreeEntry[], depth = 0): TreeEntry[] =>
+  entries.map(({ note: _note, children, ...e }) => {
+    const named = { ...e, name: fit(e.name, depth) }
+    return children ? { ...named, children: bare(children, depth + 1) } : named
+  })
 
 /* PORTING */ export function ideFrame2(f: Frame): SceneModel { try { return build(f) } catch (e) { if (f.model === 'TODO') return { nodes: [] }; throw e } }
 function build({ model, tree, editor, session, side, edges = [], project = 'globalbank' }: Frame): SceneModel {

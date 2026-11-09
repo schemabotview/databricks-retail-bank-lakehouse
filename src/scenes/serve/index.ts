@@ -1,7 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
 import { lineOf, linesFrom } from '../ide'
-import { ideFrame2 } from '../frame'
+import { SIDE_W, ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import warehouse1 from '../../../spine/serve/01-warehouse/project/globalbank/warehouse.py?raw'
@@ -46,7 +46,7 @@ const about1 = outputOf(s1, `${WH} --about`)
 const [whName, whRest] = about1.split(': ')
 const spend1 = grid(outputOf(s1, `${WH} sql/gold/card_spend.sql`))
 const warehouse1Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A statement, run on the warehouse',
   tree: tree(['sql/gold/card_spend.sql', 'globalbank/warehouse.py'], 'globalbank/warehouse.py', ['globalbank/warehouse.py', 'sql/gold/card_spend.sql']),
   editor: { file: 'globalbank/warehouse.py', code: warehouse1, ...view(warehouse1, 'def run(w, sql'), highlight: linesFrom(warehouse1, 'r = w.statement_execution.execute_statement(', 'for k, v in params.items()])') },
   session: s1,
@@ -76,13 +76,13 @@ const days2 = weeks2.rows.flatMap((r) => r.slice(1).map(num)) // a week to a row
 const top2 = Math.ceil(Math.max(...days2) / 1000) * 1000
 const low2 = Math.min(0, Math.floor(Math.min(...days2) / 1000) * 1000)
 const balances2Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A balance for every account, every day',
   tree: tree(['sql/gold/daily_balances.sql', 'sql/gold/balance_of.sql', 'globalbank/warehouse.py'], 'sql/gold/daily_balances.sql', ['sql/gold/daily_balances.sql', 'sql/gold/balance_of.sql']),
   editor: { file: 'sql/gold/daily_balances.sql', code: balances2, lang: 'sql', ...view(balances2, 'CREATE OR REPLACE TABLE', 'LEFT JOIN daily m'), highlight: linesFrom(balances2, 'SELECT a.account_id, d.day,', 'PARTITION BY a.account_id ORDER BY d.day) AS balance') },
   session: s2,
   side: [
     {
-      type: 'plot', id: 'balance', compact: true, title: 'A0000011, balance each evening of October, EUR',
+      type: 'plot', id: 'balance', compact: true, w: SIDE_W - 34, title: 'A0000011, balance each evening of October, EUR',
       x: { labels: days2.map((_, i) => (i % 5 === 0 ? `${i + 1}` : '')) }, y: { min: low2, max: top2, step: (top2 - low2) / 4 },
       series: [{ kind: 'line', points: days2.map((b, i) => [i, b] as [number, number]), tone: 'store' }],
     },
@@ -95,22 +95,19 @@ const balances2Scene: SceneModel = ideFrame2({
 
 // §3 — the monthly statement.
 const st3 = grid(outputOf(s3, `${WH} sql/gold/statement_of.sql account=A0000011`))
-const made3 = grid(outputOf(s3, `${WH} sql/gold/monthly_statements.sql`))
 const statements3Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Both balances from one table',
   tree: tree(['sql/gold/daily_balances.sql', 'sql/gold/monthly_statements.sql', 'sql/gold/statement_of.sql'], 'sql/gold/monthly_statements.sql', ['sql/gold/monthly_statements.sql', 'sql/gold/statement_of.sql']),
   editor: { file: 'sql/gold/monthly_statements.sql', code: statements3, lang: 'sql', ...view(statements3, 'core AS (', "WHERE b.day = DATE'2026-10-31'"), highlight: linesFrom(statements3, "SELECT '2026-10' AS month", 'b.balance AS closing') },
   session: s3,
   side: [
+    { type: 'item', id: 'bal', title: 'gold.daily_balances', sub: 'opening: 30 September · closing: 31 October', icon: 'layers', tone: 'store' },
     {
       type: 'table', id: 'statement', title: 'A0000011, October 2026', tone: 'store', columns: ['', 'EUR'],
       rows: st3.rows.map((r) => ({ id: `s-${r[0].replace(/\W+/g, '-')}`, cells: r, tone: /balance/.test(r[0]) ? 'store' as const : undefined })),
     },
-    {
-      type: 'table', id: 'made', title: 'gold.monthly_statements', tone: 'store', columns: made3.columns,
-      rows: made3.rows.map((r, i) => ({ id: `m-${i}`, cells: r })),
-    },
   ],
+  edges: [{ from: 'bal', to: 'statement', label: 'the same postings' }],
 })
 
 // §4 — the regulator's question: as reported, and as restated after late clearing files.
@@ -119,7 +116,7 @@ const heads4 = out4.match(/^as reported: version (\d+)\s+as restated: version (\
 const rows4 = grid(out4.split('\n').slice(1).join('\n'))
 const col4 = (name: string) => rows4.columns.indexOf(name)
 const asof4Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A report, read as it was then',
   tree: tree(['sql/gold/regulatory_snapshot.sql', 'globalbank/asof.py', 'globalbank/warehouse.py'], 'globalbank/asof.py', ['sql/gold/regulatory_snapshot.sql', 'globalbank/asof.py']),
   editor: { file: 'globalbank/asof.py', code: asof4, highlight: [lineOf(asof4, 'TIMESTAMP AS OF')] },
   session: s4,
@@ -143,31 +140,25 @@ const asof4Scene: SceneModel = ideFrame2({
 })
 
 // §5 — gold.accounts, then a dashboard drawn from its datasets' results (each printed on one line).
-const acc5 = grid(outputOf(s5, `${WH} sql/gold/accounts.sql`))
 const out5 = outputOf(s5, 'python -m globalbank.dashboard')
 const sets5 = all(out5, /^-- (.*) \((.*)\)\n(.*)$/gm).map((m) => ({ name: m[1], rows: m[3].split(' · ').map((r) => r.split(' ')) }))
 const bars = (rows: string[][], col: number) => rows.map((r, i) => [i, num(r[col])] as [number, number])
 const ceil = (rows: string[][], col: number, step: number) => Math.ceil(Math.max(...rows.map((r) => num(r[col]))) / step) * step
 const [region5, segment5] = sets5
 const dashboard5Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Charts drawn from gold only',
   tree: tree(['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json', 'globalbank/dashboard.py'], 'globalbank/dashboard.py', ['sql/gold/accounts.sql', 'dashboards/statements.lvdash.json', 'globalbank/dashboard.py']),
   editor: { file: 'globalbank/dashboard.py', code: dashboard5, ...view(dashboard5, 'w.lakeview.publish'), highlight: linesFrom(dashboard5, 'w.lakeview.publish', "print(' · '.join(") },
   session: s5,
   side: [
     {
-      type: 'table', id: 'accounts', title: 'gold.accounts: what the charts group by', tone: 'store', columns: acc5.columns,
-      rows: acc5.rows.map((r, i) => ({ id: `a-${i}`, cells: r })),
-    },
-    {
-      type: 'plot', id: 'region', compact: true, title: `${region5.name}, EUR`,
+      type: 'plot', id: 'region', compact: true, w: SIDE_W - 34, title: `${region5.name}, EUR`,
       x: { labels: region5.rows.map((r) => r[0]) }, y: { min: 0, max: ceil(region5.rows, 1, 500000), step: ceil(region5.rows, 1, 500000) / 4 },
       series: [{ kind: 'bar', points: bars(region5.rows, 1), tone: 'serve' }],
     },
     {
-      type: 'plot', id: 'segment', compact: true, title: `${segment5.name}: average EUR`,
-      x: { labels: segment5.rows.map((r) => `${r[0]} (${r[1]})`) }, y: { min: 0, max: ceil(segment5.rows, 2, 5000), step: ceil(segment5.rows, 2, 5000) / 4 },
-      series: [{ kind: 'bar', points: bars(segment5.rows, 2), tone: 'store' }],
+      type: 'table', id: 'segment', title: `${segment5.name}`, tone: 'store', columns: ['segment', 'accounts', 'avg EUR'],
+      rows: segment5.rows.map((r) => ({ id: `s-${r[0]}`, cells: r })),
     },
   ],
 })
@@ -176,7 +167,7 @@ const dashboard5Scene: SceneModel = ideFrame2({
 const q6 = grid(outputOf(s6, `${WH} sql/alerts/overdrawn.sql`))
 const made6 = outputOf(s6, 'python -m globalbank.alert').split('\n')
 const alerts6Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A query, a condition, a notification',
   tree: tree(['sql/alerts/overdrawn.sql', 'globalbank/alert.py', 'globalbank/warehouse.py'], 'globalbank/alert.py', ['sql/alerts/overdrawn.sql', 'globalbank/alert.py']),
   editor: { file: 'globalbank/alert.py', code: alert6, ...view(alert6, 'evaluation=sql.AlertV2Evaluation('), highlight: linesFrom(alert6, 'evaluation=sql.AlertV2Evaluation(', "timezone_id='Europe/Amsterdam'))") },
   session: s6,
@@ -202,14 +193,14 @@ const alerts6Scene: SceneModel = ideFrame2({
 // §7 — why a query is slow: what each statement read, from the query history.
 const q7 = grid(outputOf(s7, 'python -m globalbank.slow'))
 const slow7Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Files read and pruned decide the speed',
   tree: tree(['sql/gold/point.sql', 'globalbank/slow.py', 'globalbank/warehouse.py'], 'globalbank/slow.py', ['sql/gold/point.sql', 'globalbank/slow.py']),
   editor: { file: 'globalbank/slow.py', code: slow7, ...view(slow7, 'RECENT = ', undefined, 0), highlight: linesFrom(slow7, 'read_files AS files', 'FROM system.query.history') },
   session: s7,
   side: [
     {
-      type: 'table', id: 'history', title: 'system.query.history: this session’s statements', tone: 'serve', columns: q7.columns,
-      rows: q7.rows.map((r, i) => ({ id: `h-${i}`, cells: r })),
+      type: 'table', id: 'history', title: 'system.query.history: this session’s statements', tone: 'serve', columns: ['statement', 'files', 'pruned', 'MB'],
+      rows: q7.rows.map((r, i) => ({ id: `h-${i}`, cells: [r[0].trim().slice(0, 16) + '…', ...r.slice(1)] })),
     },
     {
       type: 'group', id: 'read', title: 'What makes a query slow', icon: 'activity', tone: 'serve', ...FILL, children: [
