@@ -65,8 +65,10 @@ export function terminal(session: string): string {
 export function wrappedRows(line: string, width = EDITOR_WRAP): number {
   let rows = 1, rest = line
   while (rest.length > width) {
-    const space = rest.lastIndexOf(' ', width) // a space may hang at the end of a row
-    const cut = space > 0 && rest.slice(0, space).trim() ? space + 1 : width
+    // A space may hang at the end of a row, and a row may break after the indent alone: a long
+    // word on an indented line leaves the indent on a row of its own (java-bank 7.2's sort call).
+    const space = rest.lastIndexOf(' ', width)
+    const cut = space >= 0 ? space + 1 : width
     rest = rest.slice(cut)
     rows++
   }
