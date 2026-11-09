@@ -1,7 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
 import { lineOf, linesFrom } from '../ide'
-import { ideFrame2 } from '../frame'
+import { SIDE_W, ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import s1 from '../../../spine/protect/01-unity-catalog/session.txt?raw'
@@ -97,7 +97,7 @@ const unityCatalog1: SceneModel = {
 const g2 = govern(outputOf(s2, `${GOV}grants.sql`))
 const reason2 = g2.summary.split(': ')[1] ?? ''
 const grants2Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Grants: who reads which layer',
   tree: tree(['governance/grants.sql', 'globalbank/govern.py'], 'governance/grants.sql', ['governance/grants.sql', 'globalbank/govern.py']),
   editor: { file: 'governance/grants.sql', code: grants2, lang: 'sql', highlight: linesFrom(grants2, 'GRANT USE CATALOG', 'TO `branches`') },
   session: s2,
@@ -131,18 +131,22 @@ const blocks3 = s3.split(/^\$ /m).slice(1)
 const peeks3 = blocks3.filter((b) => b.startsWith(PEEK)).map((b) => peek(b))
 const role3 = outputOf(s3, 'python -m globalbank.roles risk')
 const masks3Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A mask decides, on every read',
   tree: tree(['governance/grants.sql', 'governance/masks.sql', 'globalbank/peek.py', 'globalbank/roles.py'], 'governance/masks.sql', ['governance/masks.sql', 'globalbank/peek.py', 'globalbank/roles.py']),
   editor: { file: 'governance/masks.sql', code: masks3, lang: 'sql', highlight: linesFrom(masks3, 'RETURN IF(EXISTS', "v, concat('*****', right(v, 3)));") },
   session: s3,
   side: [
     {
-      type: 'table', id: 'before', title: 'Read with no role: masked', tone: 'consume', columns: ['customer', 'national_id', 'iban'],
-      rows: peeks3[0].map((r) => ({ id: `b-${r[0]}`, cells: r, tone: 'consume' as const })),
-    },
-    {
-      type: 'table', id: 'after', title: `Read as ${role3.split(' reads as ')[1]}: whole`, tone: 'ingest', columns: ['customer', 'national_id', 'iban'],
-      rows: peeks3[1].map((r) => ({ id: `a-${r[0]}`, cells: r, tone: 'ingest' as const })),
+      type: 'group', id: 'peek', bare: true, children: [
+        {
+          type: 'table', id: 'before', title: 'No role: masked (IBAN too)', tone: 'consume', columns: ['customer', 'national_id'],
+          rows: peeks3[0].slice(0, 2).map((r) => ({ id: `b-${r[0]}`, cells: r.slice(0, 2), tone: 'consume' as const })),
+        },
+        {
+          type: 'table', id: 'after', title: `Read as ${role3.split(' reads as ')[1]}: whole`, tone: 'ingest', columns: ['customer', 'national_id'],
+          rows: peeks3[1].slice(0, 2).map((r) => ({ id: `a-${r[0]}`, cells: r.slice(0, 2), tone: 'ingest' as const })),
+        },
+      ],
     },
     {
       type: 'group', id: 'how', title: 'Who decides', icon: 'shield', tone: 'store', ...FILL, children: [
@@ -153,6 +157,7 @@ const masks3Scene: SceneModel = ideFrame2({
     },
   ],
   edges: [
+    { from: 'before', to: 'after', label: 'the same SELECT, as risk' },
     { from: 'h-q', to: 'h-mask' },
     { from: 'h-mask', to: 'h-roles', label: 'asks' },
   ],
@@ -163,13 +168,13 @@ const blocks4 = s4.split(/^\$ /m).slice(1)
 const regions = (b: string) => all(b, /(\w+) ([\d,]+)/g).map((m) => ({ region: m[1], n: num(m[2]) }))
 const reg4 = blocks4.filter((b) => b.startsWith('python -m globalbank.regions')).map((b) => regions(b.split('\n').slice(1).join('\n')))
 const filters4Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A row filter: one table, two answers',
   tree: tree(['governance/filters.sql', 'governance/masks.sql', 'globalbank/regions.py', 'globalbank/roles.py'], 'governance/filters.sql', ['governance/filters.sql', 'globalbank/regions.py']),
   editor: { file: 'governance/filters.sql', code: filters4, lang: 'sql', highlight: linesFrom(filters4, 'RETURN EXISTS', 'SET ROW FILTER') },
   session: s4,
   side: [
     {
-      type: 'plot', id: 'rows', compact: true, title: 'Customers per region, by who asks',
+      type: 'plot', id: 'rows', compact: true, w: SIDE_W - 34, title: 'Customers per region, by who asks',
       x: { labels: reg4[1].map((r) => r.region) }, y: { min: 0, max: Math.ceil(Math.max(...reg4[1].map((r) => r.n)) / 250) * 250, step: 250 },
       series: [
         { kind: 'bar', label: 'branch, North', points: reg4[1].map((r, i) => [i, reg4[0].find((x) => x.region === r.region)?.n ?? 0]), tone: 'consume' },
@@ -189,14 +194,14 @@ const filters4Scene: SceneModel = ideFrame2({
 const pii5 = outputOf(s5, 'python -m globalbank.pii')
 const tagged5 = all(pii5, /^\s+(\w+)\.(\w+)\.(\w+)\s+(\w+)$/gm).map((m) => ({ schema: m[1], table: m[2], column: m[3], tag: m[4] }))
 const tags5Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Tags map the personal data',
   tree: tree(['governance/filters.sql', 'governance/masks.sql', 'governance/tags.sql', 'globalbank/pii.py'], 'governance/tags.sql', ['governance/tags.sql', 'globalbank/pii.py']),
   editor: { file: 'governance/tags.sql', code: tags5, lang: 'sql', highlight: [lineOf(tags5, "SET TAGS ('pii' = 'national_id')"), lineOf(tags5, "SET TAGS ('pii' = 'account_number')")] },
   session: s5,
   side: [
     {
       type: 'table', id: 'tagged', title: `${tagged5.length} columns tagged pii`, tone: 'store', columns: ['table', 'column', 'pii'],
-      rows: tagged5.map((t) => ({ id: `t-${t.table}-${t.column}`, cells: [`${t.schema}.${t.table}`, t.column, t.tag], tone: ['national_id', 'account_number'].includes(t.tag) ? 'consume' as const : undefined })),
+      rows: tagged5.map((t) => ({ id: `t-${t.table}-${t.column}`, cells: [t.table, t.column, t.tag], tone: ['national_id', 'account_number'].includes(t.tag) ? 'consume' as const : undefined })),
     },
     {
       type: 'group', id: 'audit', title: 'What the tags are for', icon: 'search', tone: 'store', ...FILL, children: [
@@ -218,14 +223,14 @@ const nodes6 = [...new Set(edges6.flatMap((e) => [e.from, e.to]))]
 const layer = (n: string) => (n.startsWith('files') ? 'source' : n.startsWith('bronze') ? 'ingest' : n.startsWith('silver') ? 'store' : 'consume') as 'source' | 'ingest' | 'store' | 'consume'
 const nid = (n: string) => `n-${n.replace(/[^a-z0-9]+/gi, '-')}`
 const lineage6Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Lineage: what each table read',
   tree: tree(['globalbank/lineage.py', 'globalbank/scd2.py', 'globalbank/ledger.py'], 'globalbank/lineage.py', ['globalbank/lineage.py']),
   editor: { file: 'globalbank/lineage.py', code: lineage6, highlight: linesFrom(lineage6, 'FROM system.access.table_lineage', "event_time > current_timestamp()") },
   session: s6,
   side: [
     {
-      type: 'table', id: 'edges', title: 'system.access.table_lineage: what each table read', tone: 'store', columns: ['read', 'to write'],
-      rows: edges6.map((e) => ({ id: `e-${nid(e.from)}-${nid(e.to)}`, cells: [e.from, e.to], tone: layer(e.to) })),
+      type: 'table', id: 'edges', title: 'system.access.table_lineage', tone: 'store', columns: ['read', 'to write'],
+      rows: edges6.map((e) => ({ id: `e-${nid(e.from)}-${nid(e.to)}`, cells: [e.from.replace('files in landing/', 'landing/'), e.to.replace(/^\w+\./, '')], tone: layer(e.to) })),
     },
     {
       type: 'group', id: 'layers', title: `${nodes6.length} tables and volumes, three layers`, icon: 'workflow', tone: 'store', ...FILL, children: [
@@ -245,18 +250,18 @@ const lineage6Scene: SceneModel = ideFrame2({
 const out7 = outputOf(s7, 'python -m globalbank.audit')
 const rows7 = all(out7, /^\s+(\S+@\S+)\s+(\w+)\s+(\d+)$/gm).map((m) => ({ who: m[1], action: m[2], n: Number(m[3]) }))
 const audit7Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Every request, recorded',
   tree: tree(['globalbank/audit.py', 'globalbank/lineage.py', 'globalbank/regions.py'], 'globalbank/audit.py', ['globalbank/audit.py']),
   editor: { file: 'globalbank/audit.py', code: audit7, highlight: linesFrom(audit7, 'FROM system.access.audit', 'event_time > current_timestamp()') },
   session: s7,
   side: [
     {
-      type: 'table', id: 'rows', title: 'system.access.audit: silver.customers, the last hour', tone: 'store', columns: ['who', 'action', 'requests'],
-      rows: rows7.map((r) => ({ id: `a-${r.action}`, cells: [r.who, r.action, String(r.n)] })),
+      type: 'table', id: 'rows', title: 'system.access.audit: the last hour', tone: 'store', columns: ['action', 'requests'],
+      rows: rows7.map((r) => ({ id: `a-${r.action}`, cells: [r.action, String(r.n)] })),
     },
     {
       type: 'group', id: 'trail', title: 'One read, recorded', icon: 'search', tone: 'store', ...FILL, children: [
-        { type: 'item', id: 't-read', title: 'regions.py reads silver.customers', sub: 'through Databricks Connect', icon: 'code' },
+        { type: 'item', id: 't-read', title: 'regions.py reads silver.customers', sub: `as ${rows7[0].who}, through Connect`, icon: 'code' },
         { type: 'item', id: 't-uc', title: 'Unity Catalog checks it', sub: 'and writes an audit event', icon: 'lock' },
         { type: 'item', id: 't-sys', title: 'system.access.audit', sub: 'a table: queried like any other', icon: 'table' },
       ],
@@ -276,7 +281,7 @@ const held8 = all(out8a, /version (\d+) holds them: (\d+) row/g).map((m) => ({ v
 const facts8 = out8a.match(/still holds (\d+) account row/)![1]
 const out8b = outputOf(s8, 'python -m globalbank.purge')
 const erasure8: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Erase the identity; keep the facts',
   tree: tree(['globalbank/erase.py', 'globalbank/purge.py', 'globalbank/vault.py'], 'globalbank/erase.py', ['globalbank/erase.py', 'globalbank/purge.py', 'globalbank/vault.py']),
   editor: { file: 'globalbank/erase.py', code: erase8, ...view(erase8, 'path = glob.glob', undefined, 0), highlight: [lineOf(erase8, 'DELETE FROM {VAULT}')] },
   session: s8,
@@ -285,7 +290,7 @@ const erasure8: SceneModel = ideFrame2({
       type: 'group', id: 'split', title: `${req8}: erase ${who8}`, icon: 'shield', tone: 'consume', ...FILL, children: [
         { type: 'item', id: 'e-facts', title: 'silver.accounts, transactions', sub: `${facts8} account row(s): kept, by customer_id only`, icon: 'layers' },
         { type: 'item', id: 'e-vault', title: 'vault.customer_pii', sub: 'name, national id, address: deleted', icon: 'lock' },
-        { type: 'item', id: 'e-files', title: 'old data files', sub: 'REORG rewrites; VACUUM deletes after 7 days', icon: 'file' },
+        { type: 'item', id: 'e-files', title: 'old data files', sub: `REORG rewrites; VACUUM after the ${out8b.match(/(\d+)-day retention/)![1]}-day retention (illustrative, not legal advice)`, icon: 'file' },
       ],
     },
     {

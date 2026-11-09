@@ -1,7 +1,7 @@
 import type { SceneModel } from '@graphlearning/graphl-flow'
 import { view } from '../fold'
 import { lineOf, linesFrom } from '../ide'
-import { ideFrame2 } from '../frame'
+import { SIDE_W, ideFrame2 } from '../frame'
 import { outputOf } from '../lab'
 import { BASE_MARK, BASE_NOTE, explorer } from '../tree'
 import nightly1 from '../../../spine/pipeline/01-why-declare/project/nightly.sh?raw'
@@ -55,22 +55,22 @@ const added = num(bronzeLine.match(/\+ ([\d,]+) =/)![1])
 const silverAfter = rowsIn(outputOf(s1, 'python -m globalbank.ledger post 2026-10-02'))
 function rowsIn(line: string) { return num(line.match(/([\d,]+) rows/)![1]) }
 const why1: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Steps typed in order break silently',
   tree: tree(['globalbank/cdc.py', 'globalbank/land.py', 'globalbank/ledger.py', 'nightly.sh'], 'nightly.sh', ['nightly.sh']),
   editor: { file: 'nightly.sh', code: nightly1, lang: 'shell', highlight: linesFrom(nightly1, 'python -m globalbank.ledger post', 'python -m globalbank.land  ') },
   session: s1,
   side: [
     {
       type: 'table', id: 'order', title: 'The order typed vs the order needed', tone: 'consume', columns: ['typed', 'reads', 'needed'], rows: [
-        { id: 'o-1', cells: ['1  ledger post', 'bronze.card_auths', '3'], tone: 'consume' },
-        { id: 'o-2', cells: ['2  land', 'the volume', '1'] },
-        { id: 'o-3', cells: ['3  land core_cdc', 'the volume', '2'] },
-        { id: 'o-4', cells: ['4  cdc customers', 'bronze.core_cdc', '4'] },
+        { id: 'o-1', cells: ['1 ledger post', 'bronze', '3'], tone: 'consume' },
+        { id: 'o-2', cells: ['2 land', 'volume', '1'] },
+        { id: 'o-3', cells: ['3 land cdc', 'volume', '2'] },
+        { id: 'o-4', cells: ['4 cdc', 'bronze', '4'] },
       ],
     },
     {
-      type: 'plot', id: 'rows', compact: true, title: 'silver.card_transactions, rows',
-      x: { labels: ['before', 'after nightly.sh', 'posted again'] }, y: { min: 0, max: Math.ceil(silverAfter / 5000) * 5000, step: 2500 },
+      type: 'plot', id: 'rows', compact: true, w: SIDE_W - 34, title: `silver rows: bronze’s ${fmt(added)} new wait a day`,
+      x: { labels: ['before', 'nightly', 'again'] }, y: { min: 0, max: Math.ceil(silverAfter / 5000) * 5000, step: 2500 },
       series: [{ kind: 'bar', points: [[0, silverBefore], [1, silverBefore], [2, silverAfter]], tone: 'consume' }],
     },
   ],
@@ -81,7 +81,7 @@ const r2 = runs(s2)
 const deployed2 = outputOf(s2, 'python -m globalbank.deploy')
 const files2 = outputOf(s2, 'bash land.sh 2026-10-02 | wc -l').trim()
 const streaming2: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'A pipeline declares a streaming table',
   tree: tree(['pipelines/bronze.py', 'globalbank/deploy.py', 'globalbank/run.py'], 'pipelines/bronze.py', ['pipelines/bronze.py', 'globalbank/deploy.py', 'globalbank/run.py']),
   editor: { file: 'pipelines/bronze.py', code: bronze2, ...view(bronze2, '@dp.table', undefined, 0), highlight: [lineOf(bronze2, "@dp.table(name='globalbank_dev.bronze.card_auths'"), lineOf(bronze2, "@dp.table(name='globalbank_dev.bronze.core_cdc'")] },
   session: s2,
@@ -106,16 +106,18 @@ const streaming2: SceneModel = ideFrame2({
 
 // §3 — materialized views: silver and gold, and how each refresh was computed.
 const r3 = runs(s3)
+// A refresh's technique, in a word: the side pane is 434px.
+const short = (how: string) => how.replace(/_/g, ' ').replace('complete recompute', 'recompute')
 const mv3: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Streaming tables append; views refresh',
   tree: tree([...PIPES, 'globalbank/deploy.py', 'globalbank/run.py'], 'pipelines/gold.py', ['pipelines/silver.py', 'pipelines/gold.py']),
   editor: { file: 'pipelines/gold.py', code: gold3, highlight: linesFrom(gold3, '@dp.materialized_view', 'GROUP BY ALL') },
   session: s3,
   side: [
     {
-      type: 'table', id: 'refresh', title: 'Two updates: what each refresh did', tone: 'consume', columns: ['dataset', 'update 1', 'update 2'],
+      type: 'table', id: 'refresh', title: 'Two updates: what each refresh did', tone: 'consume', columns: ['layer', 'update 1', 'update 2'],
       rows: r3[1].map((d, i) => ({
-        id: `r-${i}`, cells: [d.name, r3[0][i]?.how ?? 'appended', d.how ?? 'appended'], tone: layerTone(d.name),
+        id: `r-${i}`, cells: [d.name.split('.')[0], short(r3[0][i]?.how ?? 'appended'), short(d.how ?? 'appended')], tone: layerTone(d.name),
       })),
     },
     {
@@ -137,7 +139,7 @@ const edges4 = all(outputOf(s4, 'python -m globalbank.graph'), /^(\S+)\s+-> (\S+
 const rank = (n: string) => ['bronze', 'silver', 'gold'].indexOf(n.split('.')[0])
 const nodes4 = [...new Set(edges4.flatMap((e) => [e.from, e.to]))].sort((a, b) => rank(a) - rank(b))
 const graph4Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'The pipeline infers the order',
   tree: tree([...PIPES, 'globalbank/graph.py', 'globalbank/run.py'], 'globalbank/graph.py', ['globalbank/graph.py']),
   editor: { file: 'globalbank/graph.py', code: graph4, highlight: linesFrom(graph4, "SELECT details:flow_definition.output_dataset", "WHERE event_type = 'flow_definition'") },
   session: s4,
@@ -147,31 +149,25 @@ const graph4Scene: SceneModel = ideFrame2({
         nodes4.map((n) => ({ type: 'item' as const, id: nid(n), title: n, sub: n.startsWith('bronze') ? 'streaming table' : 'materialized view', icon: n.startsWith('bronze') ? 'stream' : 'table', tone: layerTone(n) })),
     },
     {
-      type: 'table', id: 'edges', title: 'flow_definition events: inputs → output', tone: 'store', columns: ['reads', 'defines'],
-      rows: edges4.map((e, i) => ({ id: `e-${i}`, cells: [e.from, e.to] })),
+      type: 'table', id: 'edges', title: 'flow_definition: inputs → output', tone: 'store', columns: ['reads', 'defines'],
+      rows: edges4.map((e, i) => ({ id: `e-${i}`, cells: [e.from.replace(/^\w+\./, ''), e.to.replace(/^\w+\./, '')] })),
     },
   ],
   edges: edges4.map((e) => ({ from: nid(e.from), to: nid(e.to) })),
 })
 
 // §5 — expectations: warn and drop, counted by the pipeline.
-const q5 = all(outputOf(s5, 'python -m globalbank.quality'), /^(\w+)\s+passed\s+([\d,]+)\s+failed\s+([\d,]+)$/gm).map((m) => ({ name: m[1], passed: num(m[2]), failed: num(m[3]) }))
-const policy: Record<string, string> = { currency_known: 'warn: kept', amount_known: 'drop', amount_in_range: 'drop' }
 const expect5: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Expectations count; drop leaves out',
   tree: tree([...PIPES, 'globalbank/quality.py', 'globalbank/run.py'], 'pipelines/silver.py', ['globalbank/quality.py']),
-  editor: { file: 'pipelines/silver.py', code: silver5, highlight: linesFrom(silver5, 'RULES = {', "@dp.expect_all_or_drop(RULES)") },
+  editor: { file: 'pipelines/silver.py', code: silver5, show: [[lineOf(silver5, 'RULES = {'), lineOf(silver5, "'amount_in_range'")], [lineOf(silver5, "@dp.expect('currency_known'"), lineOf(silver5, '@dp.expect_all_or_drop(RULES)')]], highlight: [...linesFrom(silver5, 'RULES = {', "'amount_in_range'"), ...linesFrom(silver5, "@dp.expect('currency_known'", '@dp.expect_all_or_drop(RULES)')] },
   session: s5,
   side: [
     {
-      type: 'table', id: 'q', title: 'Expectations, from the event log', tone: 'consume', columns: ['expectation', 'policy', 'passed', 'failed'],
-      rows: q5.map((q) => ({ id: `q-${q.name}`, cells: [q.name, policy[q.name] ?? '', fmt(q.passed), fmt(q.failed)], tone: q.failed ? 'consume' as const : undefined })),
-    },
-    {
-      type: 'table', id: 'policies', title: 'Three policies', tone: 'store', columns: ['decorator', 'a failing row', 'the update'], rows: [
-        { id: 'p-warn', cells: ['@dp.expect', 'kept, counted', 'carries on'] },
-        { id: 'p-drop', cells: ['@dp.expect_or_drop', 'left out, counted', 'carries on'], tone: 'store' },
-        { id: 'p-fail', cells: ['@dp.expect_or_fail', '—', 'stops'] },
+      type: 'table', id: 'policies', title: 'Three policies', tone: 'store', columns: ['@dp.', 'a bad row', 'update'], rows: [
+        { id: 'p-warn', cells: ['expect', 'kept', 'goes on'] },
+        { id: 'p-drop', cells: ['…_or_drop', 'left out', 'goes on'], tone: 'store' },
+        { id: 'p-fail', cells: ['…_or_fail', '—', 'stops'] },
       ],
     },
     {
@@ -192,7 +188,7 @@ const expect5: SceneModel = ideFrame2({
 const recon6 = Object.fromEntries(all(outputOf(s6, 'python -m globalbank.recon'), /^(\w+)\s+([\d,]+)$/gm).map((m) => [m[1], num(m[2])]))
 const eq6 = outputOf(s6, 'python -m globalbank.recon').split('\n').at(-1)!
 const quarantine6: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Pass to silver; fail to quarantine',
   tree: tree([...PIPES, 'globalbank/recon.py', 'globalbank/run.py'], 'pipelines/silver.py', ['globalbank/recon.py']),
   editor: { file: 'pipelines/silver.py', code: silver6, ...view(silver6, 'RULES = {', undefined, 0), highlight: linesFrom(silver6, "card_transactions_quarantine')", 'WHERE {broken}') },
   session: s6,
@@ -201,14 +197,14 @@ const quarantine6: SceneModel = ideFrame2({
       type: 'group', id: 'split', title: 'From one RULES dictionary, two views', icon: 'filter', tone: 'store', ...FILL, children: [
         { type: 'item', id: 'x-bronze', title: `bronze: ${fmt(recon6.bronze)} rows`, sub: 'as received', icon: 'layers' },
         { type: 'item', id: 'x-rules', title: 'RULES', sub: 'silver keeps what passes; quarantine, what fails', icon: 'filter' },
-        { type: 'item', id: 'x-both', title: 'two materialized views', sub: 'they can never disagree', icon: 'check' },
+        { type: 'item', id: 'x-both', title: 'two materialized views', sub: `they never disagree: ${eq6}`, icon: 'check' },
       ],
     },
     {
       type: 'table', id: 'ways', title: 'Every bronze row goes one of three ways', tone: 'store', columns: ['to', 'rows', 'why'], rows: [
-        { id: 'w-silver', cells: ['silver', fmt(recon6.silver), 'one per auth_id, every rule passed'], tone: 'store' },
-        { id: 'w-q', cells: ['quarantine', fmt(recon6.quarantine), 'a rule failed: kept, with the original'], tone: 'consume' },
-        { id: 'w-dup', cells: ['resends', fmt(recon6.resends), 'the same auth_id again'] },
+        { id: 'w-silver', cells: ['silver', fmt(recon6.silver), 'every rule passed'], tone: 'store' },
+        { id: 'w-q', cells: ['quarantine', fmt(recon6.quarantine), 'a rule failed'], tone: 'consume' },
+        { id: 'w-dup', cells: ['resends', fmt(recon6.resends), 'auth_id again'] },
       ],
     },
   ],
@@ -219,26 +215,19 @@ const quarantine6: SceneModel = ideFrame2({
 })
 
 // §7 — AUTO CDC: Course 5's MERGE as one declaration.
-const r7 = runs(s7)
-const cust7 = outputOf(s7, 'python -m globalbank.customer C000001 | tail -1')
-const now7 = cust7.match(/silver now: seq (\d+), (.+)$/m)!
 const autoCdc7: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'AUTO CDC: Course 5’s MERGE, declared',
   tree: tree([...PIPES, 'globalbank/customer.py', 'globalbank/run.py'], 'pipelines/silver.py'),
   editor: { file: 'pipelines/silver.py', code: silver7, ...view(silver7, '# Course 5', undefined, 0), highlight: linesFrom(silver7, 'dp.create_auto_cdc_flow(', 'stored_as_scd_type=1)') },
   session: s7,
   side: [
     {
       type: 'table', id: 'map', title: 'Course 5’s code, as arguments', tone: 'store', columns: ['Course 5', 'AUTO CDC'], rows: [
-        { id: 'm-key', cells: ['ON t.customer_id = s.k', "keys=['customer_id']"] },
-        { id: 'm-seq', cells: ['AND s.seq > t.seq', "sequence_by='seq'"], tone: 'store' },
-        { id: 'm-del', cells: ["WHEN … s.op = 'D' THEN DELETE", "apply_as_deletes=\"op = 'D'\""] },
-        { id: 'm-scd2', cells: ['scd2.py: lead(ts) …', 'stored_as_scd_type=2'], tone: 'store' },
+        { id: 'm-key', cells: ['ON … customer_id', 'keys'] },
+        { id: 'm-seq', cells: ['s.seq > t.seq', 'sequence_by'], tone: 'store' },
+        { id: 'm-del', cells: ["op = 'D' → DELETE", 'apply_as_deletes'] },
+        { id: 'm-scd2', cells: ['scd2.py', 'stored_as_scd_type'], tone: 'store' },
       ],
-    },
-    {
-      type: 'table', id: 'rows', title: `C000001 now: seq ${now7[1]}, ${now7[2]}`, tone: 'ingest', columns: ['table', 'rows'],
-      rows: r7[0].filter((d) => d.name.startsWith('silver.customers')).map((d) => ({ id: `t-${d.name}`, cells: [d.name, fmt(d.rows)] })),
     },
     {
       type: 'group', id: 'flow', title: 'Declared, not written', icon: 'workflow', tone: 'store', ...FILL, children: [
@@ -259,13 +248,13 @@ const out8 = outputOf(s8, 'python -m globalbank.events')
 const kinds8 = all(out8.split('\n')[0], /(\w+) (\d+)/g).map((m) => ({ kind: m[1], n: Number(m[2]) }))
 const flows8 = all(out8, /^\s+(\S+)\s+(\w+)\s+(\d+)s$/gm).map((m) => ({ flow: m[1], status: m[2], secs: Number(m[3]) }))
 const events8Scene: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'The event log: a table of what ran',
   tree: tree([...PIPES, 'globalbank/events.py', 'globalbank/run.py'], 'globalbank/events.py', ['globalbank/events.py']),
   editor: { file: 'globalbank/events.py', code: events8, ...view(events8, 'spark = get_spark()', undefined, 0), highlight: linesFrom(events8, 'SELECT origin.flow_name AS flow', 'GROUP BY ALL HAVING status IS NOT NULL') },
   session: s8,
   side: [
     {
-      type: 'plot', id: 'secs', compact: true, title: 'Seconds per flow, running to completed',
+      type: 'plot', id: 'secs', compact: true, w: SIDE_W - 34, title: 'Seconds per flow, running to completed',
       x: { labels: flows8.map((f) => ({ card_auths: 'auths', core_cdc: 'cdc', card_spend_daily: 'spend', card_transactions: 'txns', card_transactions_quarantine: 'quar.', customers: 'cust.', customers_history: 'hist.' } as Record<string, string>)[f.flow.split('.').pop()!] ?? f.flow) }, y: { min: 0, max: Math.ceil(Math.max(...flows8.map((f) => f.secs)) / 20) * 20, step: 20 },
       series: [{ kind: 'bar', points: flows8.map((f, i) => [i, f.secs]), tone: 'store' }],
     },
@@ -280,15 +269,15 @@ const events8Scene: SceneModel = ideFrame2({
 const counts9 = s9.split(/^\$ /m).slice(1).filter((b) => b.startsWith('python -m globalbank.counts'))
   .map((b) => Object.fromEntries(all(b, /^\s+(\S+)\s+([\d,]+) rows$/gm).map((m) => [m[1], num(m[2])])))
 const full9: SceneModel = ideFrame2({
-  model: 'TODO',
+  model: 'Full refresh rebuilds; bronze is kept',
   tree: tree([...PIPES, 'globalbank/counts.py', 'globalbank/run.py'], 'pipelines/bronze.py', ['globalbank/counts.py']),
-  editor: { file: 'pipelines/bronze.py', code: bronze9, ...view(bronze9, 'KEEP =', undefined, 0), highlight: [lineOf(bronze9, 'KEEP ='), lineOf(bronze9, 'table_properties=KEEP')] },
+  editor: { file: 'pipelines/bronze.py', code: bronze9, show: [[lineOf(bronze9, 'KEEP ='), lineOf(bronze9, 'KEEP =')], [lineOf(bronze9, 'table_properties=KEEP'), lineOf(bronze9, 'table_properties=KEEP')]], highlight: [lineOf(bronze9, 'KEEP ='), lineOf(bronze9, 'table_properties=KEEP')] },
   session: s9,
   side: [
     {
-      type: 'table', id: 'counts', title: 'Rows before and after a full refresh', tone: 'store', columns: ['table', 'before', 'after', 'full refresh'],
+      type: 'table', id: 'counts', title: 'Rows before and after a full refresh', tone: 'store', columns: ['table', 'before', 'after'],
       rows: Object.keys(counts9[0]).map((t) => ({
-        id: `c-${t}`, cells: [t, fmt(counts9[0][t]), fmt(counts9[1][t]), t.startsWith('bronze') ? 'kept: reset not allowed' : 'rebuilt from bronze'],
+        id: `c-${t}`, cells: [t.replace(/^\w+\./, ''), fmt(counts9[0][t]), fmt(counts9[1][t])],
         tone: t.startsWith('bronze') ? 'ingest' as const : 'store' as const,
       })),
     },
