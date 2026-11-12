@@ -38,9 +38,10 @@ by course till end").
 
 **2026-11-09: ported to IDE frame v2** (COURSE-PLAN Decision 8). All 75 IDE sections are on v2; the
 11 concept scenes are unchanged. Five narrations changed (ledger change-feed, pipeline expectations,
-serve dashboard, schedule run-as, ship targets): their wavs are removed, so check-content fails on
-those five until Colab regenerates them. Then every course is re-recorded: the recordings and the
-film above are v1. Nothing was replayed: the spine is unchanged.
+serve dashboard, schedule run-as, ship targets); Colab regenerated their wavs. Nothing was
+replayed: the spine is unchanged. 2026-11-11: every course re-recorded at 4K on v2 (segment cache
+and `scripts/out/` cleared first: the cache's fingerprint covers audio and encoding, not the scene,
+so a frame change needs `--force` or an empty cache) and the film re-cut.
 
 **The owner's workspace holds other catalogs** (personal and training ones). Never list catalogs,
 groups or users unfiltered on screen: filter to `globalbank*`, or print our own objects only.
